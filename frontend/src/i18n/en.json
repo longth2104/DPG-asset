@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "home": "Home",
+    "assets": "Assets",
+    "profile": "Profile",
+    "signOut": "Sign out"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "login": "Log in",
+    "signingIn": "Signing in...",
+    "or": "Or",
+    "googleHint": "Company email accounts only",
+    "invalidCredentials": "Incorrect email or password"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "genericError": "Something went wrong, please try again",
+    "noResults": "No data"
+  },
+  "assets": {
+    "title": "Asset registry",
+    "newAsset": "Add asset",
+    "search": "Search by name, asset code, holder...",
+    "filters": {
+      "department": "Department",
+      "category": "Category",
+      "status": "Status",
+      "location": "Location",
+      "all": "All"
+    },
+    "columns": {
+      "code": "Asset code",
+      "name": "Name",
+      "category": "Category",
+      "department": "Department",
+      "holder": "Holder",
+      "status": "Status"
+    },
+    "status": {
+      "dang_su_dung": "In use",
+      "dang_sua_chua": "Under repair",
+      "cho_thanh_ly": "Pending liquidation",
+      "da_thanh_ly": "Liquidated",
+      "da_dieu_dong": "Reallocated"
+    }
+  },
+  "assetDetail": {
+    "profile": "Asset profile",
+    "spec": "Technical spec",
+    "serialNumber": "Serial number",
+    "manufacturer": "Manufacturer",
+    "originalCost": "Original cost",
+    "warranty": "Warranty (months)",
+    "purchaseSource": "Purchased from",
+    "notes": "Notes",
+    "history": "Asset history",
+    "addNote": "Add note",
+    "notePlaceholder": "e.g. moved to site X, sent for repair...",
+    "documents": "Attached documents",
+    "upload": "Upload document",
+    "edit": "Edit details",
+    "eventType": {
+      "created": "Asset created",
+      "updated": "Details updated",
+      "status_change": "Status changed",
+      "note": "Note"
+    }
+  },
+  "createAsset": {
+    "title": "Add new asset",
+    "name": "Asset name",
+    "category": "Category",
+    "department": "Department",
+    "holder": "Holder",
+    "location": "Location",
+    "manufacturer": "Manufacturer",
+    "originalCost": "Original cost (VND)",
+    "submit": "Create asset"
+  },
+  "profile": {
+    "role": "Role"
+  }
+}

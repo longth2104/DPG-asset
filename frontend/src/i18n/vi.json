@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "home": "Trang chủ",
+    "assets": "Tài sản",
+    "profile": "Hồ sơ",
+    "signOut": "Đăng xuất"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Mật khẩu",
+    "login": "Đăng nhập",
+    "signingIn": "Đang đăng nhập...",
+    "or": "Hoặc",
+    "googleHint": "Chỉ dành cho email nội bộ công ty",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "create": "Tạo mới",
+    "genericError": "Đã xảy ra lỗi, vui lòng thử lại",
+    "noResults": "Không có dữ liệu"
+  },
+  "assets": {
+    "title": "Danh sách tài sản",
+    "newAsset": "Thêm tài sản",
+    "search": "Tìm theo tên, mã tài sản, người sử dụng...",
+    "filters": {
+      "department": "Phòng ban",
+      "category": "Nhóm thiết bị",
+      "status": "Tình trạng",
+      "location": "Vị trí",
+      "all": "Tất cả"
+    },
+    "columns": {
+      "code": "Mã tài sản",
+      "name": "Tên tài sản",
+      "category": "Nhóm thiết bị",
+      "department": "Phòng ban",
+      "holder": "Người sử dụng",
+      "status": "Tình trạng"
+    },
+    "status": {
+      "dang_su_dung": "Đang sử dụng",
+      "dang_sua_chua": "Đang sửa chữa",
+      "cho_thanh_ly": "Chờ thanh lý",
+      "da_thanh_ly": "Đã thanh lý",
+      "da_dieu_dong": "Đã điều động"
+    }
+  },
+  "assetDetail": {
+    "profile": "Thông tin tài sản",
+    "spec": "Cấu hình kỹ thuật",
+    "serialNumber": "Số serial",
+    "manufacturer": "Hãng sản xuất",
+    "originalCost": "Nguyên giá",
+    "warranty": "Bảo hành (tháng)",
+    "purchaseSource": "Nơi mua",
+    "notes": "Ghi chú",
+    "history": "Lý lịch thiết bị",
+    "addNote": "Thêm ghi chú",
+    "notePlaceholder": "Ví dụ: đã chuyển cho công trình X, gửi sửa chữa...",
+    "documents": "Tài liệu đính kèm",
+    "upload": "Tải lên tài liệu",
+    "edit": "Sửa thông tin",
+    "eventType": {
+      "created": "Tạo tài sản",
+      "updated": "Cập nhật thông tin",
+      "status_change": "Thay đổi tình trạng",
+      "note": "Ghi chú"
+    }
+  },
+  "createAsset": {
+    "title": "Thêm tài sản mới",
+    "name": "Tên tài sản",
+    "category": "Nhóm thiết bị",
+    "department": "Phòng ban sử dụng",
+    "holder": "Người sử dụng",
+    "location": "Vị trí",
+    "manufacturer": "Hãng sản xuất",
+    "originalCost": "Nguyên giá (VNĐ)",
+    "submit": "Tạo tài sản"
+  },
+  "profile": {
+    "role": "Vai trò"
+  }
+}

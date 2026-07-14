@@ -1,0 +1,112 @@
+# Every variable has a built-in default so the stack runs with ZERO
+# environment configuration. Override any of them via a .env file.
+#
+# The only values you likely want to set in production:
+#   HTTP_PORT                — free host port when behind a reverse proxy
+#   GOOGLE_CLIENT_ID         — enables Google SSO
+#   GOOGLE_ALLOWED_DOMAIN    — restricts Google SSO to this email domain
+#   SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD — for the one-shot seed_admin script
+#   POSTGRES_PASSWORD / SECRET_KEY — recommended to override for security
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      # Always derived from POSTGRES_* — DATABASE_URL is never taken as a
+      # standalone env var, so it can never drift from the DB credentials.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dpg}:${POSTGRES_PASSWORD:-DpgAssetPg2026}@postgres:5432/${POSTGRES_DB:-dpg_asset}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SECRET_KEY: ${SECRET_KEY:-6f3a8e0c4d1b9f7a2e5c8d0b3a6f9c2e5d8b1a4f7c0e3b6a9d2f5c8b1e4a7d0c}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: asset-uploads
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_ALLOWED_DOMAIN: ${GOOGLE_ALLOWED_DOMAIN:-}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dpg_asset}
+      POSTGRES_USER: ${POSTGRES_USER:-dpg}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-DpgAssetPg2026}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dpg} -d ${POSTGRES_DB:-dpg_asset}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Daily database backups into their own volume. Keeps the 14 newest dumps.
+  # Restore a dump with:
+  #   docker compose exec db-backup sh -c 'pg_restore -h postgres -U dpg -d dpg_asset --clean /backups/<file>.dump'
+  db-backup:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-DpgAssetPg2026}
+    entrypoint: ["sh", "-c", "while true; do pg_dump -h postgres -U ${POSTGRES_USER:-dpg} -d ${POSTGRES_DB:-dpg_asset} -F c -f /backups/dpg_asset_$$(date +%Y%m%d_%H%M%S).dump && echo backup written; ls -1t /backups/*.dump 2>/dev/null | tail -n +15 | xargs -r rm; sleep 86400; done"]
+    volumes:
+      - db_backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  # Volume names are pinned (not derived from the compose project name) so
+  # data survives app renames/redeploys. Distinct from LMS's volume names —
+  # this is an independent deployment, not a shared one.
+  pg_data:
+    name: ${PG_VOLUME_NAME:-dpg-asset-pg-data-v1}
+  minio_data:
+    name: ${MINIO_VOLUME_NAME:-dpg-asset-minio-data}
+  db_backups:
+    name: ${BACKUP_VOLUME_NAME:-dpg-asset-db-backups}

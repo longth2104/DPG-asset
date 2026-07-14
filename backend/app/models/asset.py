@@ -1,0 +1,54 @@
+import uuid
+from datetime import date, datetime
+
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.database import Base
+
+# Controlled vocabularies kept as plain strings (validated in the Pydantic schema)
+# rather than Postgres ENUMs, matching the User.role rationale — status options
+# specifically will grow once the QT02/QT04 workflows land.
+ASSET_STATUSES = (
+    "dang_su_dung",
+    "dang_sua_chua",
+    "cho_thanh_ly",
+    "da_thanh_ly",
+    "da_dieu_dong",
+)
+ASSET_DOMAINS = ("a", "b")  # a = construction machinery (QT01-04), b = office/IT (QT10)
+
+
+class Asset(Base):
+    __tablename__ = "assets"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    asset_code: Mapped[str | None] = mapped_column(String, unique=True, nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    spec: Mapped[str | None] = mapped_column(Text, nullable=True)
+    serial_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    manufacturer: Mapped[str | None] = mapped_column(String, nullable=True)
+    manufacture_year: Mapped[int | None] = mapped_column(nullable=True)
+    year_put_in_use: Mapped[date | None] = mapped_column(nullable=True)
+    original_cost: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    warranty_months: Mapped[int | None] = mapped_column(nullable=True)
+    legal_entity: Mapped[str] = mapped_column(String, nullable=False, default="Đạt Phương")
+    department: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    holder: Mapped[str | None] = mapped_column(String, nullable=True)
+    location: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="dang_su_dung", index=True)
+    domain: Mapped[str] = mapped_column(String, nullable=False, default="b")
+    budget_plan_year: Mapped[int | None] = mapped_column(nullable=True)
+    budget_actual_year: Mapped[int | None] = mapped_column(nullable=True)
+    replacement_priority: Mapped[str | None] = mapped_column(String, nullable=True)
+    purchase_source: Mapped[str | None] = mapped_column(String, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
