@@ -83,6 +83,14 @@
         </div>
       </div>
 
+      <div
+        v-if="importError"
+        class="bg-white text-gray-900 border border-red-300 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p class="text-red-600">{{ $t(importError) }}</p>
+        <button @click="importError = ''" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+      </div>
+
       <div v-if="store.loading" class="space-y-2">
         <div v-for="i in 8" :key="i" class="h-12 bg-white/10 rounded animate-pulse" />
       </div>
@@ -151,6 +159,7 @@ const selectedIds = ref(new Set())
 const exporting = ref(false)
 const importing = ref(false)
 const importResult = ref(null)
+const importError = ref('')
 
 onMounted(() => store.fetchAssets())
 
@@ -217,6 +226,7 @@ async function onImportPick(e) {
   if (!file) return
   importing.value = true
   importResult.value = null
+  importError.value = ''
   try {
     const form = new FormData()
     form.append('file', file)
@@ -225,6 +235,8 @@ async function onImportPick(e) {
     })
     importResult.value = data
     await store.fetchAssets()
+  } catch (err) {
+    importError.value = err.response?.data?.detail ?? 'common.genericError'
   } finally {
     importing.value = false
     e.target.value = ''
