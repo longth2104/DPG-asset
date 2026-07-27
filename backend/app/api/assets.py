@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,11 +16,15 @@ from app.schemas.asset import (
     AssetCreate,
     AssetEventCreate,
     AssetEventOut,
+    AssetExportRequest,
+    AssetImportResult,
     AssetListItem,
     AssetOut,
     AssetUpdate,
 )
 from app.schemas.document import DocumentOut
+from app.services.excel import build_asset_xlsx, parse_asset_xlsx
+from app.services.pdf import render_asset_export_pdf
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -70,6 +75,115 @@ async def list_assets(
     stmt = stmt.order_by(Asset.name)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+@router.get("/mine", response_model=list[AssetListItem])
+async def list_my_assets(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    stmt = select(Asset).where(Asset.holder_user_id == user.id).order_by(Asset.name)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.post("/export")
+async def export_assets(
+    body: AssetExportRequest,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    if body.format not in ("xlsx", "pdf"):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "format must be 'xlsx' or 'pdf'")
+
+    stmt = select(Asset)
+    if body.ids:
+        stmt = stmt.where(Asset.id.in_(body.ids))
+    else:
+        if body.department:
+            stmt = stmt.where(Asset.department == body.department)
+        if body.category:
+            stmt = stmt.where(Asset.category == body.category)
+        if body.status:
+            stmt = stmt.where(Asset.status == body.status)
+        if body.location:
+            stmt = stmt.where(Asset.location == body.location)
+        if body.search:
+            pattern = f"%{body.search}%"
+            stmt = stmt.where(
+                (Asset.name.ilike(pattern))
+                | (Asset.asset_code.ilike(pattern))
+                | (Asset.holder.ilike(pattern))
+            )
+    stmt = stmt.order_by(Asset.name)
+    assets = (await db.execute(stmt)).scalars().all()
+
+    if body.format == "xlsx":
+        content = build_asset_xlsx(assets)
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = "danh-sach-tai-san.xlsx"
+    else:
+        content = render_asset_export_pdf(assets)
+        media_type = "application/pdf"
+        filename = "danh-sach-tai-san.pdf"
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/import", response_model=AssetImportResult)
+async def import_assets(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_asset_manager),
+):
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "File too large")
+
+    try:
+        rows = parse_asset_xlsx(content)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+
+    # A duplicate asset_code would otherwise crash the whole import with an
+    # unhandled IntegrityError — a real risk given export→edit→re-import is
+    # the exact round trip this endpoint is meant to support. Pre-check
+    # against existing codes and track codes seen so far in this file so an
+    # intra-file duplicate is caught the same way.
+    incoming_codes = {row["asset_code"] for row in rows if row.get("asset_code")}
+    existing_codes = set()
+    if incoming_codes:
+        result = await db.execute(select(Asset.asset_code).where(Asset.asset_code.in_(incoming_codes)))
+        existing_codes = {code for (code,) in result.all()}
+    seen_codes = set(existing_codes)
+
+    imported = 0
+    errors: list[dict] = []
+    for idx, row in enumerate(rows, start=2):
+        if not row.get("name"):
+            errors.append({"row": idx, "reason": "Thiếu tên tài sản"})
+            continue
+        code = row.get("asset_code")
+        if code and code in seen_codes:
+            errors.append({"row": idx, "reason": f"Mã tài sản đã tồn tại: {code}"})
+            continue
+        if not code:
+            code = _generate_asset_code()
+            row["asset_code"] = code
+        seen_codes.add(code)
+
+        asset = Asset(**row, created_by=user.id)
+        db.add(asset)
+        await db.flush()
+        await _log_event(db, asset.id, user.id, "created", f"Nhập từ file Excel: {file.filename}")
+        imported += 1
+
+    await db.commit()
+    return AssetImportResult(imported=imported, skipped=len(errors), errors=errors)
 
 
 @router.get("/{asset_id}", response_model=AssetOut)

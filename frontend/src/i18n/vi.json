@@ -47,6 +47,22 @@
       "cho_thanh_ly": "Chờ thanh lý",
       "da_thanh_ly": "Đã thanh lý",
       "da_dieu_dong": "Đã điều động"
+    },
+    "io": {
+      "selectAll": "Chọn tất cả",
+      "selected": "Đã chọn {count}",
+      "import": "Nhập Excel",
+      "exportExcel": "Xuất Excel",
+      "exportPdf": "Xuất PDF",
+      "exportSelected": "Xuất mục đã chọn",
+      "exportAll": "Xuất tất cả (theo bộ lọc)",
+      "importTitle": "Nhập tài sản từ file Excel",
+      "importHint": "Dùng file được xuất từ hệ thống, hoặc sắp xếp đúng thứ tự cột.",
+      "chooseFile": "Chọn file",
+      "importing": "Đang nhập...",
+      "importResult": "Đã nhập {imported}, bỏ qua {skipped}",
+      "errorsHeader": "Các dòng bị lỗi",
+      "rowError": "Dòng {row}: {reason}"
     }
   },
   "assetDetail": {
@@ -84,5 +100,91 @@
   },
   "profile": {
     "role": "Vai trò"
+  },
+  "home": {
+    "title": "Trang chủ",
+    "myAssets": "Tài sản tôi đang sử dụng",
+    "noAssets": "Chưa có tài sản nào được liên kết với tài khoản của bạn — liên hệ người quản lý tài sản để được gán.",
+    "actions": "Tạo yêu cầu",
+    "action": {
+      "transfer": "Điều động / nhận tài sản",
+      "transferHint": "Chuyển giao giữa cá nhân, phòng ban hoặc chi nhánh",
+      "acquire": "Đề xuất mua sắm tài sản",
+      "acquireHint": "Đề xuất tài sản mới cho cá nhân, phòng ban hoặc dự án",
+      "liquidate": "Đề xuất thanh lý",
+      "liquidateHint": "Đề xuất thanh lý một tài sản"
+    },
+    "myRequests": "Yêu cầu của tôi",
+    "pendingForMe": "Đang chờ tôi duyệt"
+  },
+  "requests": {
+    "type": {
+      "transfer": "Điều động / nhận",
+      "acquire": "Mua sắm",
+      "liquidate": "Thanh lý"
+    },
+    "status": {
+      "pending": "Chờ duyệt",
+      "approved": "Đã duyệt",
+      "rejected": "Từ chối",
+      "completed": "Hoàn tất"
+    },
+    "scope": {
+      "individual": "Cá nhân",
+      "department": "Phòng ban",
+      "branch": "Chi nhánh",
+      "project": "Dự án"
+    },
+    "fields": {
+      "asset": "Tài sản",
+      "scope": "Phạm vi",
+      "toHolder": "Người nhận (email)",
+      "fromDepartment": "Phòng ban hiện tại",
+      "toDepartment": "Phòng ban nhận",
+      "fromLocation": "Vị trí hiện tại",
+      "toLocation": "Vị trí nhận",
+      "justification": "Lý do / mục đích sử dụng",
+      "estimatedCost": "Dự toán chi phí (VNĐ)",
+      "reason": "Lý do thanh lý",
+      "conditionNote": "Tình trạng hiện tại"
+    },
+    "form": {
+      "transferTitle": "Yêu cầu điều động / nhận tài sản mới",
+      "acquireTitle": "Đề xuất mua sắm tài sản mới",
+      "liquidateTitle": "Đề xuất thanh lý mới",
+      "chooseAsset": "Chọn tài sản",
+      "submit": "Gửi yêu cầu",
+      "submitting": "Đang gửi...",
+      "createdRedirect": "Đã gửi yêu cầu"
+    },
+    "detail": {
+      "title": "Yêu cầu",
+      "requester": "Người đề nghị",
+      "approverRole": "Vai trò phê duyệt",
+      "decisionNote": "Ghi chú phê duyệt",
+      "decisionNotePlaceholder": "Ghi chú (không bắt buộc)...",
+      "approve": "Phê duyệt",
+      "reject": "Từ chối",
+      "decided": "Đã quyết định",
+      "downloadPdf": "Tải / in PDF",
+      "signSection": "Ký xác nhận",
+      "signedName": "Nhập họ tên để xác nhận",
+      "signaturePad": "Vẽ chữ ký (không bắt buộc)",
+      "clearSignature": "Xóa",
+      "uploadInstead": "Hoặc tải lên ảnh chữ ký",
+      "signSubmit": "Ký",
+      "signing": "Đang ký...",
+      "alreadySignedRequester": "Bạn đã ký với vai trò người đề nghị",
+      "alreadySignedApprover": "Bạn đã ký với vai trò người phê duyệt",
+      "notYourTurn": "Bạn không liên quan đến yêu cầu này",
+      "signatureOf": "Chữ ký — {role}",
+      "roleRequester": "Người đề nghị",
+      "roleApprover": "Người phê duyệt"
+    },
+    "list": {
+      "mine": "Yêu cầu của tôi",
+      "pendingForMe": "Đang chờ tôi duyệt",
+      "empty": "Chưa có yêu cầu nào"
+    }
   }
 }

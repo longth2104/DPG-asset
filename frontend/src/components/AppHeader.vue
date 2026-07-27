@@ -136,7 +136,10 @@ const dropdownOpen = ref(false)
 const mobileOpen = ref(false)
 const logoRef = ref(null)
 
-const navLinks = computed(() => [{ to: '/', label: t('nav.assets') }])
+const navLinks = computed(() => [
+  { to: '/', label: t('nav.home') },
+  { to: '/assets', label: t('nav.assets') },
+])
 
 function toggleLang() {
   setLocale(locale.value === 'vi' ? 'en' : 'vi')

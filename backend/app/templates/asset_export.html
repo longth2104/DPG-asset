@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4 landscape; margin: 1.5cm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10px; color: #111; }
+  h1 { text-align: center; font-size: 15px; text-transform: uppercase; margin-bottom: 4px; }
+  p.meta { text-align: center; color: #555; margin-top: 0; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 4px 6px; text-align: left; }
+  th { background: #f2f2f2; }
+</style>
+</head>
+<body>
+  <h1>Danh sách tài sản</h1>
+  <p class="meta">Xuất ngày {{ generated_at }} — {{ assets|length }} tài sản</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Mã tài sản</th>
+        <th>Tên tài sản</th>
+        <th>Nhóm thiết bị</th>
+        <th>Phòng ban</th>
+        <th>Người sử dụng</th>
+        <th>Vị trí</th>
+        <th>Tình trạng</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assets %}
+      <tr>
+        <td>{{ a.asset_code or '' }}</td>
+        <td>{{ a.name }}</td>
+        <td>{{ a.category or '' }}</td>
+        <td>{{ a.department or '' }}</td>
+        <td>{{ a.holder or '' }}</td>
+        <td>{{ a.location or '' }}</td>
+        <td>{{ status_labels.get(a.status, a.status) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

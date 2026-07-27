@@ -12,3 +12,10 @@ python-multipart==0.0.12
 minio==7.2.10
 httpx==0.27.2
 openpyxl==3.1.5
+jinja2==3.1.4
+# weasyprint 62.3 only declares pydyf>=0.10.0 (no upper bound), so an
+# unpinned install resolves pydyf 0.12+ and breaks at runtime with
+# `AttributeError: 'super' object has no attribute 'transform'` — pin the
+# version weasyprint 62.x actually targets.
+pydyf==0.11.0
+weasyprint==62.3

@@ -47,6 +47,22 @@
       "cho_thanh_ly": "Pending liquidation",
       "da_thanh_ly": "Liquidated",
       "da_dieu_dong": "Reallocated"
+    },
+    "io": {
+      "selectAll": "Select all",
+      "selected": "{count} selected",
+      "import": "Import",
+      "exportExcel": "Export Excel",
+      "exportPdf": "Export PDF",
+      "exportSelected": "Export selected",
+      "exportAll": "Export all (filtered)",
+      "importTitle": "Import assets from Excel",
+      "importHint": "Use a file exported from this app, or matching column order.",
+      "chooseFile": "Choose file",
+      "importing": "Importing...",
+      "importResult": "Imported {imported}, skipped {skipped}",
+      "errorsHeader": "Rows with errors",
+      "rowError": "Row {row}: {reason}"
     }
   },
   "assetDetail": {
@@ -84,5 +100,91 @@
   },
   "profile": {
     "role": "Role"
+  },
+  "home": {
+    "title": "Home",
+    "myAssets": "Assets I currently hold",
+    "noAssets": "No assets are linked to your account yet — ask an asset manager to assign one to you.",
+    "actions": "Make a request",
+    "action": {
+      "transfer": "Move / receive asset",
+      "transferHint": "Transfer between individuals, departments, or branches",
+      "acquire": "Acquire new asset",
+      "acquireHint": "Request a new asset for yourself, your department, or a project",
+      "liquidate": "Liquidate asset",
+      "liquidateHint": "Propose an asset for liquidation"
+    },
+    "myRequests": "My requests",
+    "pendingForMe": "Awaiting my approval"
+  },
+  "requests": {
+    "type": {
+      "transfer": "Move / receive",
+      "acquire": "Acquire",
+      "liquidate": "Liquidate"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "completed": "Completed"
+    },
+    "scope": {
+      "individual": "Individual",
+      "department": "Department",
+      "branch": "Branch",
+      "project": "Project"
+    },
+    "fields": {
+      "asset": "Asset",
+      "scope": "Scope",
+      "toHolder": "Recipient (email)",
+      "fromDepartment": "From department",
+      "toDepartment": "To department",
+      "fromLocation": "From location",
+      "toLocation": "To location",
+      "justification": "Justification / intended use",
+      "estimatedCost": "Estimated cost (VND)",
+      "reason": "Reason for liquidation",
+      "conditionNote": "Current condition"
+    },
+    "form": {
+      "transferTitle": "New transfer / receive request",
+      "acquireTitle": "New asset acquisition request",
+      "liquidateTitle": "New liquidation request",
+      "chooseAsset": "Select an asset",
+      "submit": "Submit request",
+      "submitting": "Submitting...",
+      "createdRedirect": "Request submitted"
+    },
+    "detail": {
+      "title": "Request",
+      "requester": "Requester",
+      "approverRole": "Approver role",
+      "decisionNote": "Decision note",
+      "decisionNotePlaceholder": "Optional note...",
+      "approve": "Approve",
+      "reject": "Reject",
+      "decided": "Decided",
+      "downloadPdf": "Download / print PDF",
+      "signSection": "Signature",
+      "signedName": "Type your full name to confirm",
+      "signaturePad": "Draw your signature (optional)",
+      "clearSignature": "Clear",
+      "uploadInstead": "Or upload a signature image",
+      "signSubmit": "Sign",
+      "signing": "Signing...",
+      "alreadySignedRequester": "You have already signed as requester",
+      "alreadySignedApprover": "You have already signed as approver",
+      "notYourTurn": "You aren't a party to this request",
+      "signatureOf": "Signature — {role}",
+      "roleRequester": "Requester",
+      "roleApprover": "Approver"
+    },
+    "list": {
+      "mine": "My requests",
+      "pendingForMe": "Awaiting my approval",
+      "empty": "No requests yet"
+    }
   }
 }

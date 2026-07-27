@@ -82,6 +82,22 @@ class AssetEventCreate(BaseModel):
     note: str
 
 
+class AssetExportRequest(BaseModel):
+    format: str  # "xlsx" | "pdf"
+    ids: list[uuid.UUID] | None = None
+    department: str | None = None
+    category: str | None = None
+    status: str | None = None
+    location: str | None = None
+    search: str | None = None
+
+
+class AssetImportResult(BaseModel):
+    imported: int
+    skipped: int
+    errors: list[dict] = []
+
+
 class AssetOut(AssetListItem):
     spec: str | None = None
     serial_number: str | None = None

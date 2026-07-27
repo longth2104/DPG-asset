@@ -19,6 +19,17 @@ ASSET_STATUSES = (
 )
 ASSET_DOMAINS = ("a", "b")  # a = construction machinery (QT01-04), b = office/IT (QT10)
 
+# Single source of truth for the Vietnamese label of each status — shared by
+# the Excel export/import round-trip and the PDF export template so a
+# re-imported sheet maps back to the same enum value it was exported with.
+ASSET_STATUS_LABELS = {
+    "dang_su_dung": "Đang sử dụng",
+    "dang_sua_chua": "Đang sửa chữa",
+    "cho_thanh_ly": "Chờ thanh lý",
+    "da_thanh_ly": "Đã thanh lý",
+    "da_dieu_dong": "Đã điều động",
+}
+
 
 class Asset(Base):
     __tablename__ = "assets"
@@ -37,6 +48,12 @@ class Asset(Base):
     legal_entity: Mapped[str] = mapped_column(String, nullable=False, default="Đạt Phương")
     department: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     holder: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Nullable, forward-only link: legacy imported rows keep `holder` as a
+    # free-text label until someone reassigns them through the app — no bulk
+    # name-matching backfill (Vietnamese full-name matching is too unreliable).
+    holder_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     location: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="dang_su_dung", index=True)
     domain: Mapped[str] = mapped_column(String, nullable=False, default="b")

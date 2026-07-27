@@ -5,6 +5,12 @@ const routes = [
   { path: '/login', name: 'login', component: () => import('@/pages/Login.vue') },
   {
     path: '/',
+    name: 'home',
+    component: () => import('@/pages/Home.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/assets',
     name: 'assets',
     component: () => import('@/pages/Assets.vue'),
     meta: { requiresAuth: true },
@@ -19,6 +25,18 @@ const routes = [
     path: '/assets/:id',
     name: 'asset-detail',
     component: () => import('@/pages/AssetDetail.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/requests/new/:type',
+    name: 'request-new',
+    component: () => import('@/pages/requests/RequestForm.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/requests/:id',
+    name: 'request-detail',
+    component: () => import('@/pages/requests/RequestDetail.vue'),
     meta: { requiresAuth: true },
   },
   {

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block fields %}
+<table class="fields">
+  <tr><th>Tài sản</th><td>{{ (asset.asset_code + ' — ') if asset and asset.asset_code else '' }}{{ asset.name if asset else '—' }}</td></tr>
+  <tr><th>Lý do thanh lý</th><td>{{ request.reason or '—' }}</td></tr>
+  <tr><th>Tình trạng hiện tại</th><td>{{ request.condition_note or '—' }}</td></tr>
+</table>
+{% endblock %}

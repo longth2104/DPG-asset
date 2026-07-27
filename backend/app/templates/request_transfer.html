@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block fields %}
+<table class="fields">
+  <tr><th>Tài sản</th><td>{{ (asset.asset_code + ' — ') if asset and asset.asset_code else '' }}{{ asset.name if asset else '—' }}</td></tr>
+  <tr><th>Phạm vi bàn giao</th><td>{{ scope_label }}</td></tr>
+  <tr>
+    <th>Bên giao (từ)</th>
+    <td>
+      {{ from_holder_name or '—' }}
+      {%- if request.from_department %} — {{ request.from_department }}{% endif %}
+      {%- if request.from_location %} ({{ request.from_location }}){% endif %}
+    </td>
+  </tr>
+  <tr>
+    <th>Bên nhận (đến)</th>
+    <td>
+      {{ to_holder_name or '—' }}
+      {%- if request.to_department %} — {{ request.to_department }}{% endif %}
+      {%- if request.to_location %} ({{ request.to_location }}){% endif %}
+    </td>
+  </tr>
+</table>
+{% endblock %}

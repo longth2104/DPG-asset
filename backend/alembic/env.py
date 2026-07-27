@@ -21,6 +21,7 @@ from app.models import user  # noqa: F401
 from app.models import asset  # noqa: F401
 from app.models import asset_event  # noqa: F401
 from app.models import document  # noqa: F401
+from app.models import request  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

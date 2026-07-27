@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import assets, auth, settings, upload
+from app.api import assets, auth, requests, settings, upload, users
 
 app = FastAPI(
     title="Đạt Phương Asset Management",
@@ -23,8 +23,10 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(assets.router)
+app.include_router(requests.router)
 app.include_router(upload.router)
 app.include_router(settings.router)
+app.include_router(users.router)
 
 
 @app.get("/api/health", tags=["health"])

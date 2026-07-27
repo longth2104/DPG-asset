@@ -5,8 +5,22 @@ import api from '@/utils/api'
 export const useAssetsStore = defineStore('assets', () => {
   const assets = ref([])
   const currentAsset = ref(null)
+  const myAssets = ref([])
   const loading = ref(false)
   const error = ref(null)
+
+  async function fetchMine() {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.get('/api/assets/mine')
+      myAssets.value = data
+    } catch (e) {
+      error.value = e.response?.data?.detail ?? 'common.genericError'
+    } finally {
+      loading.value = false
+    }
+  }
 
   async function fetchAssets(params = {}) {
     loading.value = true
@@ -62,7 +76,7 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   return {
-    assets, currentAsset, loading, error,
-    fetchAssets, fetchAsset, createAsset, updateAsset, addEvent, uploadDocument,
+    assets, currentAsset, myAssets, loading, error,
+    fetchAssets, fetchAsset, fetchMine, createAsset, updateAsset, addEvent, uploadDocument,
   }
 })

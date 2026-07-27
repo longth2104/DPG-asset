@@ -43,6 +43,18 @@ def store_object(content: bytes, original_filename: str, content_type: str | Non
     return object_name
 
 
+def get_object_bytes(object_name: str) -> bytes:
+    """Fetches an object's raw bytes — used by the PDF renderer to embed
+    signature images as data URIs rather than having WeasyPrint fetch them
+    back over HTTP through the (authenticated) proxy endpoint below."""
+    response = get_client().get_object(settings.MINIO_BUCKET, object_name)
+    try:
+        return response.read()
+    finally:
+        response.close()
+        response.release_conn()
+
+
 # Sync `def` on purpose: FastAPI runs sync route functions in a worker thread,
 # which keeps this endpoint's blocking MinIO I/O off the event loop — matches
 # the LMS backend's convention for its equivalent proxy endpoint.

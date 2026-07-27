@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block fields %}
+<table class="fields">
+  <tr>
+    <th>Đề xuất cho</th>
+    <td>{{ scope_label }}{% if request.to_department %} — {{ request.to_department }}{% endif %}</td>
+  </tr>
+  <tr><th>Lý do / Mục đích sử dụng</th><td>{{ request.justification or '—' }}</td></tr>
+  <tr><th>Dự toán chi phí</th><td>{{ estimated_cost_label }}</td></tr>
+</table>
+{% endblock %}
