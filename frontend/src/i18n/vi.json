@@ -62,7 +62,12 @@
       "importing": "Đang nhập...",
       "importResult": "Đã nhập {imported}, bỏ qua {skipped}",
       "errorsHeader": "Các dòng bị lỗi",
-      "rowError": "Dòng {row}: {reason}"
+      "rowError": "Dòng {row}: {reason}",
+      "deleteSelected": "Xóa đã chọn",
+      "deleteAll": "Xóa tất cả",
+      "deleting": "Đang xóa...",
+      "confirmDeleteSelected": "Xóa {count} tài sản đã chọn? Hành động này không thể hoàn tác — lịch sử, tài liệu đính kèm và các yêu cầu liên quan cũng sẽ bị xóa vĩnh viễn.",
+      "confirmDeleteAll": "Xóa toàn bộ {count} tài sản đang hiển thị (theo bộ lọc hiện tại)? Hành động này không thể hoàn tác — lịch sử, tài liệu đính kèm và các yêu cầu liên quan cũng sẽ bị xóa vĩnh viễn."
     }
   },
   "assetDetail": {

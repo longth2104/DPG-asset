@@ -62,7 +62,12 @@
       "importing": "Importing...",
       "importResult": "Imported {imported}, skipped {skipped}",
       "errorsHeader": "Rows with errors",
-      "rowError": "Row {row}: {reason}"
+      "rowError": "Row {row}: {reason}",
+      "deleteSelected": "Delete selected",
+      "deleteAll": "Delete all",
+      "deleting": "Deleting...",
+      "confirmDeleteSelected": "Delete {count} selected asset(s)? This cannot be undone — it also permanently removes their history, attached documents, and any linked requests.",
+      "confirmDeleteAll": "Delete all {count} listed asset(s) (matching the current filters)? This cannot be undone — it also permanently removes their history, attached documents, and any linked requests."
     }
   },
   "assetDetail": {

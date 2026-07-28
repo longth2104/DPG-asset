@@ -59,6 +59,32 @@
           {{ importing ? $t('assets.io.importing') : $t('assets.io.import') }}
           <input type="file" accept=".xlsx" class="hidden" :disabled="importing" @change="onImportPick" />
         </label>
+
+        <template v-if="auth.isAssetManager">
+          <span class="w-px self-stretch bg-white/20 mx-1" />
+          <button
+            @click="deleteSelected"
+            :disabled="!selectedIds.size || deleting"
+            class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+          >
+            {{ $t('assets.io.deleteSelected') }}
+          </button>
+          <button
+            @click="deleteAll"
+            :disabled="!filtered.length || deleting"
+            class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+          >
+            {{ $t('assets.io.deleteAll') }}
+          </button>
+        </template>
+      </div>
+
+      <div
+        v-if="deleteError"
+        class="bg-white text-gray-900 border border-red-300 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p class="text-red-600">{{ $t(deleteError) }}</p>
+        <button @click="deleteError = ''" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
       </div>
 
       <div
@@ -142,6 +168,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
 import { useAuthStore } from '@/stores/auth'
@@ -150,6 +177,7 @@ import { downloadBlob } from '@/utils/download'
 
 const store = useAssetsStore()
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const search = ref('')
 const departmentFilter = ref('')
@@ -160,6 +188,8 @@ const exporting = ref(false)
 const importing = ref(false)
 const importResult = ref(null)
 const importError = ref('')
+const deleting = ref(false)
+const deleteError = ref('')
 
 onMounted(() => store.fetchAssets())
 
@@ -241,5 +271,33 @@ async function onImportPick(e) {
     importing.value = false
     e.target.value = ''
   }
+}
+
+async function deleteAssetIds(ids) {
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await api.post('/api/assets/delete', { ids })
+    selectedIds.value = new Set()
+    await store.fetchAssets()
+  } catch (err) {
+    deleteError.value = err.response?.data?.detail ?? 'common.genericError'
+  } finally {
+    deleting.value = false
+  }
+}
+
+function deleteSelected() {
+  const count = selectedIds.value.size
+  if (!count) return
+  if (!confirm(t('assets.io.confirmDeleteSelected', { count }))) return
+  deleteAssetIds([...selectedIds.value])
+}
+
+function deleteAll() {
+  const ids = filtered.value.map((a) => a.id)
+  if (!ids.length) return
+  if (!confirm(t('assets.io.confirmDeleteAll', { count: ids.length }))) return
+  deleteAssetIds(ids)
 }
 </script>

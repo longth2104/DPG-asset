@@ -98,6 +98,14 @@ class AssetImportResult(BaseModel):
     errors: list[dict] = []
 
 
+class AssetDeleteRequest(BaseModel):
+    ids: list[uuid.UUID]
+
+
+class AssetDeleteResult(BaseModel):
+    deleted: int
+
+
 class AssetOut(AssetListItem):
     spec: str | None = None
     serial_number: str | None = None

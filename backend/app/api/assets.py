@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, require_asset_manager
@@ -14,6 +14,8 @@ from app.models.document import Document
 from app.models.user import User
 from app.schemas.asset import (
     AssetCreate,
+    AssetDeleteRequest,
+    AssetDeleteResult,
     AssetEventCreate,
     AssetEventOut,
     AssetExportRequest,
@@ -184,6 +186,24 @@ async def import_assets(
 
     await db.commit()
     return AssetImportResult(imported=imported, skipped=len(errors), errors=errors)
+
+
+@router.post("/delete", response_model=AssetDeleteResult)
+async def delete_assets(
+    body: AssetDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_asset_manager),
+):
+    if not body.ids:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No asset ids provided")
+
+    # A single bulk statement so Postgres's own ON DELETE CASCADE (assets ->
+    # asset_events/documents/requests -> request_signatures) handles cleanup —
+    # deleting an asset here also deletes its history, documents, and any
+    # requests filed against it; the frontend confirmation dialog says so.
+    result = await db.execute(delete(Asset).where(Asset.id.in_(body.ids)))
+    await db.commit()
+    return AssetDeleteResult(deleted=result.rowcount)
 
 
 @router.get("/{asset_id}", response_model=AssetOut)
