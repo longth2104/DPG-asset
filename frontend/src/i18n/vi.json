@@ -3,7 +3,9 @@
     "home": "Trang chủ",
     "assets": "Tài sản",
     "profile": "Hồ sơ",
-    "signOut": "Đăng xuất"
+    "signOut": "Đăng xuất",
+    "adminUsers": "Người dùng",
+    "adminCompanies": "Công ty"
   },
   "auth": {
     "email": "Email",
@@ -19,6 +21,7 @@
     "save": "Lưu",
     "cancel": "Hủy",
     "create": "Tạo mới",
+    "search": "Tìm kiếm",
     "genericError": "Đã xảy ra lỗi, vui lòng thử lại",
     "noResults": "Không có dữ liệu"
   },
@@ -67,7 +70,11 @@
       "deleteAll": "Xóa tất cả",
       "deleting": "Đang xóa...",
       "confirmDeleteSelected": "Xóa {count} tài sản đã chọn? Hành động này không thể hoàn tác — lịch sử, tài liệu đính kèm và các yêu cầu liên quan cũng sẽ bị xóa vĩnh viễn.",
-      "confirmDeleteAll": "Xóa toàn bộ {count} tài sản đang hiển thị (theo bộ lọc hiện tại)? Hành động này không thể hoàn tác — lịch sử, tài liệu đính kèm và các yêu cầu liên quan cũng sẽ bị xóa vĩnh viễn."
+      "confirmDeleteAll": "Xóa toàn bộ {count} tài sản đang hiển thị (theo bộ lọc hiện tại)? Hành động này không thể hoàn tác — lịch sử, tài liệu đính kèm và các yêu cầu liên quan cũng sẽ bị xóa vĩnh viễn.",
+      "syncRds": "Đồng bộ từ RDS",
+      "syncing": "Đang đồng bộ...",
+      "syncResult": "Đồng bộ RDS: {created} tạo mới, {updated} cập nhật",
+      "syncUnmapped": "mã công ty chưa xác định: {codes}"
     }
   },
   "assetDetail": {
@@ -85,6 +92,7 @@
     "documents": "Tài liệu đính kèm",
     "upload": "Tải lên tài liệu",
     "edit": "Sửa thông tin",
+    "printDossier": "In / xuất lý lịch",
     "eventType": {
       "created": "Tạo tài sản",
       "updated": "Cập nhật thông tin",
@@ -190,6 +198,30 @@
       "mine": "Yêu cầu của tôi",
       "pendingForMe": "Đang chờ tôi duyệt",
       "empty": "Chưa có yêu cầu nào"
+    }
+  },
+  "admin": {
+    "companies": {
+      "title": "Công ty",
+      "hint": "Tất cả công ty được khởi tạo ở cấp ngang hàng (chưa có công ty mẹ) — thiết lập quan hệ mẹ/con thực tế tại đây.",
+      "add": "Thêm công ty",
+      "code": "Mã",
+      "name": "Tên",
+      "parent": "Công ty mẹ",
+      "noParent": "— không có (cấp cao nhất) —",
+      "globalAccess": "Xem được tất cả tài sản"
+    },
+    "users": {
+      "title": "Người dùng",
+      "hint": "Ứng dụng chỉ cho phép người dùng đã được thêm trước truy cập — hãy thêm người dùng tại đây trước khi họ có thể đăng nhập.",
+      "searchHris": "Tìm kiếm HRIS",
+      "searchPlaceholder": "Tìm theo tên, email hoặc mã nhân viên...",
+      "usePicker": "Chọn →",
+      "add": "Thêm người dùng",
+      "fullName": "Họ và tên",
+      "chooseRole": "Chọn vai trò",
+      "chooseCompany": "Chọn công ty",
+      "linkedHris": "Nhân viên HRIS liên kết"
     }
   }
 }

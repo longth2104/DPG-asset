@@ -125,6 +125,20 @@ def render_request_pdf(
     return HTML(string=html, base_url=str(TEMPLATES_DIR)).write_pdf()
 
 
+def render_asset_dossier_pdf(asset, documents, events, company_name: str | None) -> bytes:
+    html = _env.get_template("asset_dossier.html").render(
+        asset=asset,
+        documents=documents,
+        events=events,
+        company_name=company_name,
+        status_label=ASSET_STATUS_LABELS.get(asset.status, asset.status),
+        original_cost_label=(
+            f"{asset.original_cost:,.0f} VNĐ" if asset.original_cost is not None else "—"
+        ),
+    )
+    return HTML(string=html, base_url=str(TEMPLATES_DIR)).write_pdf()
+
+
 def render_asset_export_pdf(assets) -> bytes:
     html = _env.get_template("asset_export.html").render(
         assets=assets,

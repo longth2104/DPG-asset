@@ -6,11 +6,12 @@ from fastapi.responses import Response
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_scope_company_path
 from app.api.upload import MAX_UPLOAD_BYTES, store_object
 from app.core.database import get_db
 from app.models.asset import Asset
 from app.models.asset_event import AssetEvent
+from app.models.company import Company
 from app.models.request import APPROVER_ROLE_BY_TYPE, REQUEST_SCOPES, REQUEST_TYPES, Request, RequestSignature
 from app.models.user import User
 from app.schemas.request import (
@@ -32,10 +33,16 @@ async def _get_request_or_404(db: AsyncSession, request_id: uuid.UUID) -> Reques
     return req
 
 
-async def _get_asset_or_404(db: AsyncSession, asset_id: uuid.UUID) -> Asset:
+async def _get_asset_or_404(
+    db: AsyncSession, asset_id: uuid.UUID, company_path: str | None = None
+) -> Asset:
     asset = await db.get(Asset, asset_id)
     if not asset:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Asset not found")
+    if company_path is not None:
+        company = await db.get(Company, asset.company_id) if asset.company_id else None
+        if not company or not company.path.startswith(company_path):
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Asset not found")
     return asset
 
 
@@ -46,6 +53,43 @@ async def _signatures_for(db: AsyncSession, request_id: uuid.UUID) -> list[Reque
         .order_by(RequestSignature.signed_at)
     )
     return result.scalars().all()
+
+
+def _request_scope_condition(company_path: str | None):
+    """SQL condition for "is this request visible to someone scoped to
+    company_path": an asset-linked request needs its asset's company in
+    scope; an acquire request (no asset) needs the requester's own company
+    in scope. Returns None when unrestricted."""
+    if company_path is None:
+        return None
+    in_scope_company_ids = select(Company.id).where(Company.path.startswith(company_path))
+    asset_in_scope = Request.asset_id.in_(
+        select(Asset.id).where(Asset.company_id.in_(in_scope_company_ids))
+    )
+    requester_in_scope = Request.asset_id.is_(None) & Request.requester_id.in_(
+        select(User.id).where(User.company_id.in_(in_scope_company_ids))
+    )
+    return or_(asset_in_scope, requester_in_scope)
+
+
+async def _assert_request_visible(
+    db: AsyncSession, req: Request, user: User, company_path: str | None
+) -> None:
+    if user.id == req.requester_id or company_path is None:
+        return
+    in_scope = False
+    if req.asset_id:
+        asset = await db.get(Asset, req.asset_id)
+        if asset and asset.company_id:
+            company = await db.get(Company, asset.company_id)
+            in_scope = bool(company and company.path.startswith(company_path))
+    else:
+        requester = await db.get(User, req.requester_id)
+        if requester and requester.company_id:
+            company = await db.get(Company, requester.company_id)
+            in_scope = bool(company and company.path.startswith(company_path))
+    if not in_scope:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Request not found")
 
 
 def _to_out(req: Request, signatures: list[RequestSignature]) -> RequestOut:
@@ -76,6 +120,7 @@ async def create_request(
     body: RequestCreate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     if body.type not in REQUEST_TYPES:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown request type")
@@ -86,7 +131,7 @@ async def create_request(
     if body.type in ("transfer", "liquidate"):
         if not body.asset_id:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "asset_id is required")
-        asset = await _get_asset_or_404(db, body.asset_id)
+        asset = await _get_asset_or_404(db, body.asset_id, company_path)
     elif body.asset_id:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "acquire requests have no existing asset")
 
@@ -135,20 +180,23 @@ async def list_requests(
     pending_for_me: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
+    scope_condition = _request_scope_condition(company_path)
+
     stmt = select(Request)
     if mine:
         stmt = stmt.where(Request.requester_id == user.id)
     elif pending_for_me:
         stmt = stmt.where(Request.status == "pending", Request.approver_role == user.role)
+        if scope_condition is not None:
+            stmt = stmt.where(scope_condition)
     else:
         # Default: the caller's own requests, plus whatever's pending at their role.
-        stmt = stmt.where(
-            or_(
-                Request.requester_id == user.id,
-                (Request.status == "pending") & (Request.approver_role == user.role),
-            )
-        )
+        pending_mine = (Request.status == "pending") & (Request.approver_role == user.role)
+        if scope_condition is not None:
+            pending_mine = pending_mine & scope_condition
+        stmt = stmt.where(or_(Request.requester_id == user.id, pending_mine))
     stmt = stmt.order_by(Request.created_at.desc())
     result = await db.execute(stmt)
     return result.scalars().all()
@@ -158,9 +206,11 @@ async def list_requests(
 async def get_request(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     req = await _get_request_or_404(db, request_id)
+    await _assert_request_visible(db, req, user, company_path)
     signatures = await _signatures_for(db, request_id)
     return _to_out(req, signatures)
 
@@ -199,12 +249,14 @@ async def decide_request(
     body: RequestDecide,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     req = await _get_request_or_404(db, request_id)
     if req.status != "pending":
         raise HTTPException(status.HTTP_409_CONFLICT, "Request already decided")
     if user.role != req.approver_role and user.role != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not the approver for this request")
+    await _assert_request_visible(db, req, user, company_path)
 
     req.status = "approved" if body.approve else "rejected"
     req.decided_by_id = user.id
@@ -229,6 +281,7 @@ async def sign_request(
     signature_image: UploadFile | None = File(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     req = await _get_request_or_404(db, request_id)
 
@@ -238,6 +291,7 @@ async def sign_request(
         role_in_flow = "approver"
     else:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not a party to this request")
+    await _assert_request_visible(db, req, user, company_path)
 
     already = await db.execute(
         select(RequestSignature).where(
@@ -275,9 +329,12 @@ async def sign_request(
 async def get_request_pdf(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     req = await _get_request_or_404(db, request_id)
+    await _assert_request_visible(db, req, user, company_path)
+
     asset = await db.get(Asset, req.asset_id) if req.asset_id else None
     requester = await db.get(User, req.requester_id)
     approver = await db.get(User, req.decided_by_id) if req.decided_by_id else None

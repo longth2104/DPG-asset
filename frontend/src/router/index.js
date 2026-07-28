@@ -45,6 +45,18 @@ const routes = [
     component: () => import('@/pages/Profile.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/admin/companies',
+    name: 'admin-companies',
+    component: () => import('@/pages/admin/Companies.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/users',
+    name: 'admin-users',
+    component: () => import('@/pages/admin/Users.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
@@ -58,6 +70,7 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
   await auth.ensureInit()
   if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login'
+  if (to.meta.requiresAdmin && !auth.isAdmin) return '/'
   if (to.path === '/login' && auth.isAuthenticated) return '/'
 })
 

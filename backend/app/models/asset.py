@@ -54,6 +54,15 @@ class Asset(Base):
     holder_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    # Access-control company (which legal entity's staff can see/edit this
+    # asset) — distinct from `legal_entity` above, which stays a free-text
+    # display label for now rather than being migrated onto this FK.
+    company_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # RDS's own stable numeric id — the upsert-match key for asset sync,
+    # since `asset_code` can be edited but this shouldn't change.
+    rds_id: Mapped[int | None] = mapped_column(nullable=True, index=True)
     location: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="dang_su_dung", index=True)
     domain: Mapped[str] = mapped_column(String, nullable=False, default="b")

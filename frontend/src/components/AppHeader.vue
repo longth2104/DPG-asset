@@ -48,6 +48,29 @@
               {{ $t('nav.profile') }}
             </router-link>
 
+            <template v-if="auth.isAdmin">
+              <router-link
+                to="/admin/users"
+                @click="dropdownOpen = false"
+                class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-3.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4" />
+                </svg>
+                {{ $t('nav.adminUsers') }}
+              </router-link>
+              <router-link
+                to="/admin/companies"
+                @click="dropdownOpen = false"
+                class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3m8-14h2m-2 4h2m-6-4h.01M9 11h.01M9 15h.01M9 19h.01M15 15h.01M15 19h.01" />
+                </svg>
+                {{ $t('nav.adminCompanies') }}
+              </router-link>
+            </template>
+
             <div class="my-1 border-t border-gray-200" />
 
             <button

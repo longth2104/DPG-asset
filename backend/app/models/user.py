@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -30,4 +30,10 @@ class User(Base):
     role: Mapped[str] = mapped_column(String, nullable=False, default="cbnv")
     google_sub: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    company_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # HRIS's own employee code — set when the user was added via HRIS lookup
+    # rather than typed in manually; also the natural re-sync key later.
+    hris_emp_code: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

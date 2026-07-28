@@ -106,6 +106,12 @@ class AssetDeleteResult(BaseModel):
     deleted: int
 
 
+class AssetSyncResult(BaseModel):
+    created: int
+    updated: int
+    unmapped_companies: list[str] = []
+
+
 class AssetOut(AssetListItem):
     spec: str | None = None
     serial_number: str | None = None

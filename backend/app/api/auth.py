@@ -1,4 +1,3 @@
-import secrets
 import uuid
 from datetime import datetime, timezone
 
@@ -14,7 +13,6 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    hash_password,
     verify_password,
 )
 from app.models.user import User
@@ -75,17 +73,17 @@ async def google_login(body: GoogleLoginRequest, db: AsyncSession = Depends(get_
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if not user:
-        # SSO-only until an admin sets a password
-        user = User(
-            email=email,
-            full_name=info.get("name"),
-            password_hash=hash_password(secrets.token_urlsafe(32)),
-            role="cbnv",
-            google_sub=info.get("sub"),
+        # This app is access-by-invitation only — an admin must add the
+        # user (via HRIS lookup) before they can sign in at all, Google
+        # or otherwise. No auto-provisioning on first login.
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Your account hasn't been added yet — contact an administrator",
         )
-        db.add(user)
+
+    if not user.google_sub:
+        user.google_sub = info.get("sub")
         await db.commit()
-        await db.refresh(user)
 
     if not user.is_active:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Account is disabled")

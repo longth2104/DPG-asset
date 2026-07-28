@@ -77,6 +77,37 @@
             {{ $t('assets.io.deleteAll') }}
           </button>
         </template>
+
+        <template v-if="auth.isAdmin">
+          <span class="w-px self-stretch bg-white/20 mx-1" />
+          <button
+            @click="syncRds"
+            :disabled="syncing"
+            class="bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+          >
+            {{ syncing ? $t('assets.io.syncing') : $t('assets.io.syncRds') }}
+          </button>
+        </template>
+      </div>
+
+      <div
+        v-if="syncResult"
+        class="bg-white text-gray-900 border border-gray-200 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p>
+          {{ $t('assets.io.syncResult', { created: syncResult.created, updated: syncResult.updated }) }}
+          <span v-if="syncResult.unmapped_companies.length">
+            — {{ $t('assets.io.syncUnmapped', { codes: syncResult.unmapped_companies.join(', ') }) }}
+          </span>
+        </p>
+        <button @click="syncResult = null" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+      </div>
+      <div
+        v-if="syncError"
+        class="bg-white text-gray-900 border border-red-300 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p class="text-red-600">{{ $t(syncError) }}</p>
+        <button @click="syncError = ''" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
       </div>
 
       <div
@@ -190,6 +221,9 @@ const importResult = ref(null)
 const importError = ref('')
 const deleting = ref(false)
 const deleteError = ref('')
+const syncing = ref(false)
+const syncResult = ref(null)
+const syncError = ref('')
 
 onMounted(() => store.fetchAssets())
 
@@ -299,5 +333,20 @@ function deleteAll() {
   if (!ids.length) return
   if (!confirm(t('assets.io.confirmDeleteAll', { count: ids.length }))) return
   deleteAssetIds(ids)
+}
+
+async function syncRds() {
+  syncing.value = true
+  syncError.value = ''
+  syncResult.value = null
+  try {
+    const { data } = await api.post('/api/assets/sync-rds')
+    syncResult.value = data
+    await store.fetchAssets()
+  } catch (err) {
+    syncError.value = err.response?.data?.detail ?? 'common.genericError'
+  } finally {
+    syncing.value = false
+  }
 }
 </script>

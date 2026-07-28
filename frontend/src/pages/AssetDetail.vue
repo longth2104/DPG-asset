@@ -13,9 +13,17 @@
             </p>
             <h1 class="text-2xl font-bold tracking-tight">{{ asset.name }}</h1>
           </div>
-          <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary">
-            {{ $t(`assets.status.${asset.status}`) }}
-          </span>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary">
+              {{ $t(`assets.status.${asset.status}`) }}
+            </span>
+            <button
+              @click="printDossier"
+              class="bg-white hover:bg-gray-100 text-gray-900 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+            >
+              {{ $t('assetDetail.printDossier') }}
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -126,6 +134,8 @@ import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
 import { useAuthStore } from '@/stores/auth'
+import api from '@/utils/api'
+import { openBlobInNewTab } from '@/utils/download'
 
 const route = useRoute()
 const store = useAssetsStore()
@@ -157,5 +167,10 @@ async function onFilePick(e) {
   if (!file) return
   await store.uploadDocument(route.params.id, file)
   e.target.value = ''
+}
+
+async function printDossier() {
+  const { data } = await api.get(`/api/assets/${route.params.id}/pdf`, { responseType: 'blob' })
+  openBlobInNewTab(data)
 }
 </script>

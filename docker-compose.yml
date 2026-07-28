@@ -33,6 +33,12 @@ services:
       GOOGLE_ALLOWED_DOMAIN: ${GOOGLE_ALLOWED_DOMAIN:-}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      HRIS_BASE_URL: ${HRIS_BASE_URL:-}
+      HRIS_EMPLOYEES_PATH: ${HRIS_EMPLOYEES_PATH:-/api/v1/api-keys/directory/employees}
+      HRIS_API_KEY: ${HRIS_API_KEY:-}
+      RDS_BASE_URL: ${RDS_BASE_URL:-}
+      RDS_CATEGORIES_PATH: ${RDS_CATEGORIES_PATH:-/api/v1/categories/tscd}
+      RDS_API_KEY: ${RDS_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

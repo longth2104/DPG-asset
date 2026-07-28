@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 12px; color: #111; }
+  .header { text-align: center; margin-bottom: 20px; }
+  .header .company { font-weight: bold; text-transform: uppercase; font-size: 13px; }
+  .header .subtitle { font-size: 11px; color: #555; margin-top: 2px; }
+  h1 { text-align: center; font-size: 16px; text-transform: uppercase; margin: 8px 0 20px; }
+  h2 { font-size: 12px; text-transform: uppercase; color: #555; margin: 20px 0 8px; }
+  table.fields { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  table.fields th, table.fields td { border: 1px solid #999; padding: 6px 8px; text-align: left; font-size: 11px; }
+  table.fields th { background: #f2f2f2; width: 34%; }
+  ul { margin: 0; padding-left: 18px; }
+  li { margin-bottom: 4px; font-size: 11px; }
+  .status-badge { display: inline-block; padding: 2px 10px; border: 1px solid #333; border-radius: 3px; font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="company">Công ty Cổ phần Tập đoàn Đạt Phương</div>
+    <div class="subtitle">Lý lịch tài sản</div>
+  </div>
+  <h1>{{ asset.name }}</h1>
+
+  <table class="fields">
+    <tr><th>Mã tài sản</th><td>{{ asset.asset_code or '—' }}</td></tr>
+    <tr><th>Nhóm thiết bị</th><td>{{ asset.category or '—' }}</td></tr>
+    <tr><th>Cấu hình kỹ thuật</th><td>{{ asset.spec or '—' }}</td></tr>
+    <tr><th>Số Serial</th><td>{{ asset.serial_number or '—' }}</td></tr>
+    <tr><th>Hãng sản xuất</th><td>{{ asset.manufacturer or '—' }}</td></tr>
+    <tr><th>Năm sản xuất</th><td>{{ asset.manufacture_year or '—' }}</td></tr>
+    <tr><th>Nguyên giá</th><td>{{ original_cost_label }}</td></tr>
+    <tr><th>Bảo hành (tháng)</th><td>{{ asset.warranty_months if asset.warranty_months is not none else '—' }}</td></tr>
+    <tr><th>Công ty</th><td>{{ company_name or '—' }}</td></tr>
+    <tr><th>Phòng ban</th><td>{{ asset.department or '—' }}</td></tr>
+    <tr><th>Người sử dụng</th><td>{{ asset.holder or '—' }}</td></tr>
+    <tr><th>Vị trí</th><td>{{ asset.location or '—' }}</td></tr>
+    <tr><th>Tình trạng</th><td><span class="status-badge">{{ status_label }}</span></td></tr>
+    <tr><th>Nơi mua</th><td>{{ asset.purchase_source or '—' }}</td></tr>
+    {% if asset.notes %}<tr><th>Ghi chú</th><td>{{ asset.notes }}</td></tr>{% endif %}
+  </table>
+
+  <h2>Tài liệu đính kèm</h2>
+  {% if documents %}
+  <ul>
+    {% for d in documents %}<li>{{ d.filename }}</li>{% endfor %}
+  </ul>
+  {% else %}
+  <p>Không có tài liệu đính kèm.</p>
+  {% endif %}
+
+  <h2>Lý lịch / lịch sử</h2>
+  {% if events %}
+  <ul>
+    {% for e in events %}
+      <li>{{ e.timestamp.strftime('%d/%m/%Y %H:%M') }} — {{ e.note or e.type }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Chưa có lịch sử.</p>
+  {% endif %}
+</body>
+</html>

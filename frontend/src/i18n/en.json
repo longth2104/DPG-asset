@@ -3,7 +3,9 @@
     "home": "Home",
     "assets": "Assets",
     "profile": "Profile",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "adminUsers": "Users",
+    "adminCompanies": "Companies"
   },
   "auth": {
     "email": "Email",
@@ -19,6 +21,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "create": "Create",
+    "search": "Search",
     "genericError": "Something went wrong, please try again",
     "noResults": "No data"
   },
@@ -67,7 +70,11 @@
       "deleteAll": "Delete all",
       "deleting": "Deleting...",
       "confirmDeleteSelected": "Delete {count} selected asset(s)? This cannot be undone — it also permanently removes their history, attached documents, and any linked requests.",
-      "confirmDeleteAll": "Delete all {count} listed asset(s) (matching the current filters)? This cannot be undone — it also permanently removes their history, attached documents, and any linked requests."
+      "confirmDeleteAll": "Delete all {count} listed asset(s) (matching the current filters)? This cannot be undone — it also permanently removes their history, attached documents, and any linked requests.",
+      "syncRds": "Sync from RDS",
+      "syncing": "Syncing...",
+      "syncResult": "RDS sync: {created} created, {updated} updated",
+      "syncUnmapped": "unrecognized company codes: {codes}"
     }
   },
   "assetDetail": {
@@ -85,6 +92,7 @@
     "documents": "Attached documents",
     "upload": "Upload document",
     "edit": "Edit details",
+    "printDossier": "Print / export dossier",
     "eventType": {
       "created": "Asset created",
       "updated": "Details updated",
@@ -190,6 +198,30 @@
       "mine": "My requests",
       "pendingForMe": "Awaiting my approval",
       "empty": "No requests yet"
+    }
+  },
+  "admin": {
+    "companies": {
+      "title": "Companies",
+      "hint": "All companies are seeded flat (no parent) — set the real parent/subsidiary relationships here.",
+      "add": "Add company",
+      "code": "Code",
+      "name": "Name",
+      "parent": "Parent",
+      "noParent": "— none (top-level) —",
+      "globalAccess": "Sees all assets"
+    },
+    "users": {
+      "title": "Users",
+      "hint": "This app is access-by-invitation only — add a user here before they can sign in.",
+      "searchHris": "Search HRIS",
+      "searchPlaceholder": "Search by name, email, or employee code...",
+      "usePicker": "Use →",
+      "add": "Add user",
+      "fullName": "Full name",
+      "chooseRole": "Choose a role",
+      "chooseCompany": "Choose a company",
+      "linkedHris": "Linked HRIS employee"
     }
   }
 }

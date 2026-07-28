@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     SEED_ADMIN_EMAIL: str = ""
     SEED_ADMIN_PASSWORD: str = ""
 
+    HRIS_BASE_URL: str = ""
+    HRIS_EMPLOYEES_PATH: str = "/api/v1/api-keys/directory/employees"
+    HRIS_API_KEY: str = ""
+
+    RDS_BASE_URL: str = ""
+    RDS_CATEGORIES_PATH: str = "/api/v1/categories/tscd"
+    RDS_API_KEY: str = ""
+
     model_config = {"env_file": ".env"}
 
 

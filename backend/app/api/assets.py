@@ -1,15 +1,22 @@
 import uuid
 
+import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_asset_manager
+from app.api.deps import (
+    get_current_user,
+    get_scope_company_path,
+    require_admin,
+    require_asset_manager,
+)
 from app.api.upload import MAX_UPLOAD_BYTES, store_object
 from app.core.database import get_db
 from app.models.asset import Asset
 from app.models.asset_event import AssetEvent
+from app.models.company import Company
 from app.models.document import Document
 from app.models.user import User
 from app.schemas.asset import (
@@ -22,11 +29,13 @@ from app.schemas.asset import (
     AssetImportResult,
     AssetListItem,
     AssetOut,
+    AssetSyncResult,
     AssetUpdate,
 )
 from app.schemas.document import DocumentOut
 from app.services.excel import build_asset_xlsx, parse_asset_xlsx
-from app.services.pdf import render_asset_export_pdf
+from app.services.pdf import render_asset_dossier_pdf, render_asset_export_pdf
+from app.services.rds import fetch_all_assets
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -35,10 +44,27 @@ def _generate_asset_code() -> str:
     return f"A-{uuid.uuid4().hex[:8].upper()}"
 
 
-async def _get_asset_or_404(db: AsyncSession, asset_id: uuid.UUID) -> Asset:
+def _scope_filter(stmt, company_path: str | None):
+    """Joins Company and restricts to its subtree when the caller isn't
+    unrestricted (see app.api.deps.get_scope_company_path)."""
+    if company_path is not None:
+        stmt = stmt.join(Company, Asset.company_id == Company.id).where(
+            Company.path.startswith(company_path)
+        )
+    return stmt
+
+
+async def _get_asset_or_404(
+    db: AsyncSession, asset_id: uuid.UUID, company_path: str | None = None
+) -> Asset:
     asset = await db.get(Asset, asset_id)
     if not asset:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Asset not found")
+    if company_path is not None:
+        company = await db.get(Company, asset.company_id) if asset.company_id else None
+        if not company or not company.path.startswith(company_path):
+            # 404, not 403 — don't confirm existence of out-of-scope assets.
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Asset not found")
     return asset
 
 
@@ -57,6 +83,7 @@ async def list_assets(
     search: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     stmt = select(Asset)
     if department:
@@ -74,7 +101,7 @@ async def list_assets(
             | (Asset.asset_code.ilike(pattern))
             | (Asset.holder.ilike(pattern))
         )
-    stmt = stmt.order_by(Asset.name)
+    stmt = _scope_filter(stmt, company_path).order_by(Asset.name)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -83,8 +110,10 @@ async def list_assets(
 async def list_my_assets(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
-    stmt = select(Asset).where(Asset.holder_user_id == user.id).order_by(Asset.name)
+    stmt = select(Asset).where(Asset.holder_user_id == user.id)
+    stmt = _scope_filter(stmt, company_path).order_by(Asset.name)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -94,6 +123,7 @@ async def export_assets(
     body: AssetExportRequest,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     if body.format not in ("xlsx", "pdf"):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "format must be 'xlsx' or 'pdf'")
@@ -117,7 +147,7 @@ async def export_assets(
                 | (Asset.asset_code.ilike(pattern))
                 | (Asset.holder.ilike(pattern))
             )
-    stmt = stmt.order_by(Asset.name)
+    stmt = _scope_filter(stmt, company_path).order_by(Asset.name)
     assets = (await db.execute(stmt)).scalars().all()
 
     if body.format == "xlsx":
@@ -178,7 +208,10 @@ async def import_assets(
             row["asset_code"] = code
         seen_codes.add(code)
 
-        asset = Asset(**row, created_by=user.id)
+        # New assets belong to the importer's own company — not exposed as
+        # an importable column, so it can't be used to plant assets into a
+        # different company than the one you're scoped to.
+        asset = Asset(**row, created_by=user.id, company_id=user.company_id)
         db.add(asset)
         await db.flush()
         await _log_event(db, asset.id, user.id, "created", f"Nhập từ file Excel: {file.filename}")
@@ -193,24 +226,120 @@ async def delete_assets(
     body: AssetDeleteRequest,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_asset_manager),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
     if not body.ids:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No asset ids provided")
+
+    # Resolve which of the requested ids are actually in scope before
+    # deleting — silently drops out-of-scope ids rather than erroring, same
+    # posture as export's id filtering.
+    id_stmt = select(Asset.id).where(Asset.id.in_(body.ids))
+    id_stmt = _scope_filter(id_stmt, company_path)
+    allowed_ids = {row[0] for row in (await db.execute(id_stmt)).all()}
+
+    if not allowed_ids:
+        return AssetDeleteResult(deleted=0)
 
     # A single bulk statement so Postgres's own ON DELETE CASCADE (assets ->
     # asset_events/documents/requests -> request_signatures) handles cleanup —
     # deleting an asset here also deletes its history, documents, and any
     # requests filed against it; the frontend confirmation dialog says so.
-    result = await db.execute(delete(Asset).where(Asset.id.in_(body.ids)))
+    result = await db.execute(delete(Asset).where(Asset.id.in_(allowed_ids)))
     await db.commit()
     return AssetDeleteResult(deleted=result.rowcount)
 
 
+@router.post("/sync-rds", response_model=AssetSyncResult)
+async def sync_from_rds(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_admin),
+):
+    """Pulls the full asset listing from RDS and upserts it into the
+    registry — matched by rds_id first, falling back to asset_code, so
+    re-running is safe. Spans every company, so admin-only."""
+    try:
+        rows = await fetch_all_assets()
+    except RuntimeError as e:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e))
+    except httpx.HTTPError as e:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"RDS request failed: {e}")
+
+    companies = {c.code: c for c in (await db.execute(select(Company))).scalars().all()}
+
+    created = 0
+    updated = 0
+    unmapped_companies: set[str] = set()
+
+    for row in rows:
+        rds_id = row.get("id")
+        extra = row.get("extra") or {}
+        notes_parts = [
+            part
+            for part in [
+                f"Xuất xứ: {extra['origin']}" if extra.get("origin") else None,
+                f"Nhóm TSCĐ: {extra['asset_group']}" if extra.get("asset_group") else None,
+                f"Đơn vị tính: {extra['unit']}" if extra.get("unit") else None,
+                f"Số kỳ phân bổ: {extra['alloc_periods']}" if extra.get("alloc_periods") else None,
+                row.get("description"),
+            ]
+            if part
+        ]
+        mapped = {
+            "asset_code": row.get("code"),
+            "name": row.get("name") or row.get("code") or f"RDS-{rds_id}",
+            "category": extra.get("asset_class"),
+            "notes": " | ".join(notes_parts) or None,
+        }
+
+        company_code = row.get("company_code")
+        company = companies.get(company_code) if company_code else None
+        if company_code and not company:
+            unmapped_companies.add(company_code)
+
+        asset = None
+        if rds_id is not None:
+            result = await db.execute(select(Asset).where(Asset.rds_id == rds_id))
+            asset = result.scalar_one_or_none()
+        if not asset and mapped["asset_code"]:
+            result = await db.execute(select(Asset).where(Asset.asset_code == mapped["asset_code"]))
+            asset = result.scalar_one_or_none()
+
+        if asset:
+            for field, value in mapped.items():
+                if value is not None:
+                    setattr(asset, field, value)
+            asset.rds_id = rds_id
+            if company:
+                asset.company_id = company.id
+            updated += 1
+        else:
+            asset = Asset(
+                **{k: v for k, v in mapped.items() if v is not None},
+                rds_id=rds_id,
+                company_id=company.id if company else None,
+                domain="a",
+                created_by=user.id,
+            )
+            db.add(asset)
+            await db.flush()
+            await _log_event(db, asset.id, user.id, "created", "Đồng bộ từ RDS")
+            created += 1
+
+    await db.commit()
+    return AssetSyncResult(
+        created=created, updated=updated, unmapped_companies=sorted(unmapped_companies)
+    )
+
+
 @router.get("/{asset_id}", response_model=AssetOut)
 async def get_asset(
-    asset_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)
+    asset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
-    asset = await _get_asset_or_404(db, asset_id)
+    asset = await _get_asset_or_404(db, asset_id, company_path)
 
     events = (
         (
@@ -267,7 +396,7 @@ async def create_asset(
     if not data.get("asset_code"):
         data["asset_code"] = _generate_asset_code()
 
-    asset = Asset(**data, created_by=user.id)
+    asset = Asset(**data, created_by=user.id, company_id=user.company_id)
     db.add(asset)
     await db.flush()
     await _log_event(db, asset.id, user.id, "created", f"Tạo tài sản {asset.name}")
@@ -282,8 +411,9 @@ async def update_asset(
     body: AssetUpdate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_asset_manager),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
-    asset = await _get_asset_or_404(db, asset_id)
+    asset = await _get_asset_or_404(db, asset_id, company_path)
 
     changes = body.model_dump(exclude_unset=True)
     if not changes:
@@ -316,8 +446,9 @@ async def add_note_event(
     body: AssetEventCreate,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_asset_manager),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
-    await _get_asset_or_404(db, asset_id)
+    await _get_asset_or_404(db, asset_id, company_path)
     event = AssetEvent(asset_id=asset_id, actor_id=user.id, type="note", note=body.note)
     db.add(event)
     await db.commit()
@@ -333,8 +464,9 @@ async def upload_document(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_asset_manager),
+    company_path: str | None = Depends(get_scope_company_path),
 ):
-    await _get_asset_or_404(db, asset_id)
+    await _get_asset_or_404(db, asset_id, company_path)
 
     content = await file.read()
     if len(content) > MAX_UPLOAD_BYTES:
@@ -355,3 +487,39 @@ async def upload_document(
     await db.commit()
     await db.refresh(document)
     return document
+
+
+@router.get("/{asset_id}/pdf")
+async def get_asset_dossier_pdf(
+    asset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
+):
+    asset = await _get_asset_or_404(db, asset_id, company_path)
+    documents = (
+        (
+            await db.execute(
+                select(Document)
+                .where(Document.asset_id == asset_id)
+                .order_by(Document.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    events = (
+        (
+            await db.execute(
+                select(AssetEvent)
+                .where(AssetEvent.asset_id == asset_id)
+                .order_by(AssetEvent.timestamp.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    company = await db.get(Company, asset.company_id) if asset.company_id else None
+
+    pdf_bytes = render_asset_dossier_pdf(asset, documents, events, company.name if company else None)
+    return Response(content=pdf_bytes, media_type="application/pdf")
