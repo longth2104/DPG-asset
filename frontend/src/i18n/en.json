@@ -263,7 +263,11 @@
       "defaultRoleHint": "New adds from HRIS search use this role — company is inferred automatically from their department.",
       "unmappedCompany": "no company match",
       "companyNotFound": "No company found for HRIS code \"{code}\" — add it first on the Companies page.",
-      "cannotEditOwnRole": "You can't change your own role — ask another admin"
+      "cannotEditOwnRole": "You can't change your own role — ask another admin",
+      "removedBadge": "Removed",
+      "remove": "Remove",
+      "restore": "Restore",
+      "confirmRemove": "Remove {email}? They'll no longer be able to sign in, but their asset/request history is kept — you can restore access later."
     },
     "council": {
       "title": "Liquidation council",

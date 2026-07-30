@@ -62,7 +62,7 @@
         <p v-if="addError" class="text-red-600 text-xs">{{ $t(addError) }}</p>
       </div>
 
-      <p v-if="roleError" class="text-red-400 text-xs mb-3">{{ roleError }}</p>
+      <p v-if="rowError" class="text-red-400 text-xs mb-3">{{ rowError }}</p>
 
       <div v-if="usersStore.loading" class="text-sm text-white/70">{{ $t('common.loading') }}</div>
       <div v-else class="bg-white text-gray-900 rounded overflow-hidden">
@@ -73,16 +73,27 @@
               <th class="text-left px-4 py-3">{{ $t('admin.users.fullName') }}</th>
               <th class="text-left px-4 py-3">{{ $t('profile.role') }}</th>
               <th class="text-left px-4 py-3">{{ $t('admin.companies.title') }}</th>
+              <th class="text-left px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="u in usersStore.users" :key="u.id" class="border-b border-gray-200">
-              <td class="px-4 py-3">{{ u.email }}</td>
+            <tr
+              v-for="u in usersStore.users"
+              :key="u.id"
+              class="border-b border-gray-200"
+              :class="{ 'opacity-50': !u.is_active }"
+            >
+              <td class="px-4 py-3">
+                {{ u.email }}
+                <span v-if="!u.is_active" class="ml-1 text-xs font-semibold text-red-600 uppercase">
+                  {{ $t('admin.users.removedBadge') }}
+                </span>
+              </td>
               <td class="px-4 py-3">{{ u.full_name || '—' }}</td>
               <td class="px-4 py-3">
                 <select
                   :value="u.role"
-                  :disabled="u.id === auth.user?.id || roleUpdating === u.id"
+                  :disabled="u.id === auth.user?.id || rowUpdating === u.id"
                   @change="changeRole(u, $event.target.value)"
                   :title="u.id === auth.user?.id ? $t('admin.users.cannotEditOwnRole') : ''"
                   class="border border-gray-300 rounded px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
@@ -91,6 +102,17 @@
                 </select>
               </td>
               <td class="px-4 py-3">{{ companyLabel(u.company_id) }}</td>
+              <td class="px-4 py-3">
+                <button
+                  v-if="u.id !== auth.user?.id"
+                  @click="toggleActive(u)"
+                  :disabled="rowUpdating === u.id"
+                  class="text-xs font-semibold hover:underline disabled:opacity-50"
+                  :class="u.is_active ? 'text-red-600' : 'text-primary'"
+                >
+                  {{ u.is_active ? $t('admin.users.remove') : $t('admin.users.restore') }}
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -113,8 +135,8 @@ const usersStore = useUsersStore()
 const companiesStore = useCompaniesStore()
 const auth = useAuthStore()
 const { t } = useI18n()
-const roleUpdating = ref(null)
-const roleError = ref('')
+const rowUpdating = ref(null)
+const rowError = ref('')
 
 const query = ref('')
 const dropdownOpen = ref(false)
@@ -203,14 +225,29 @@ async function addFromHris(emp) {
 
 async function changeRole(user, role) {
   if (role === user.role) return
-  roleUpdating.value = user.id
-  roleError.value = ''
+  rowUpdating.value = user.id
+  rowError.value = ''
   try {
-    await usersStore.updateRole(user.id, role)
+    await usersStore.update(user.id, { role })
   } catch (e) {
-    roleError.value = e.response?.data?.detail ?? t('common.genericError')
+    rowError.value = e.response?.data?.detail ?? t('common.genericError')
   } finally {
-    roleUpdating.value = null
+    rowUpdating.value = null
+  }
+}
+
+async function toggleActive(user) {
+  const goingActive = !user.is_active
+  if (!goingActive && !confirm(t('admin.users.confirmRemove', { email: user.email }))) return
+
+  rowUpdating.value = user.id
+  rowError.value = ''
+  try {
+    await usersStore.update(user.id, { is_active: goingActive })
+  } catch (e) {
+    rowError.value = e.response?.data?.detail ?? t('common.genericError')
+  } finally {
+    rowUpdating.value = null
   }
 }
 

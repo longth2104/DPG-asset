@@ -12,7 +12,7 @@ from app.core.security import hash_password
 from app.models.company import Company
 from app.models.user import ROLES, User
 from app.schemas.request import UserBrief
-from app.schemas.user import HrisEmployeeOut, UserAdminOut, UserCreate, UserRoleUpdate
+from app.schemas.user import HrisEmployeeOut, UserAdminOut, UserCreate, UserUpdate
 from app.services.hris import company_code_from_dept_code, search_employees
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -122,25 +122,29 @@ async def create_user(
 
 
 @router.patch("/{user_id}", response_model=UserAdminOut)
-async def update_user_role(
+async def update_user(
     user_id: uuid.UUID,
-    body: UserRoleUpdate,
+    body: UserUpdate,
     db: AsyncSession = Depends(get_db),
     current: User = Depends(require_admin),
 ):
-    if body.role not in ROLES:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown role")
     if user_id == current.id:
         # An admin editing their own row could accidentally lock themselves
-        # (or, in a single-admin deployment, everyone) out — have another
-        # admin do it instead.
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot change your own role")
+        # (or, in a single-admin deployment, everyone) out of the app —
+        # have another admin change your role/status instead.
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot change your own account")
 
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
-    user.role = body.role
+    changes = body.model_dump(exclude_unset=True)
+    if changes.get("role") is not None and changes["role"] not in ROLES:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown role")
+
+    for field, value in changes.items():
+        setattr(user, field, value)
+
     await db.commit()
     await db.refresh(user)
     return user

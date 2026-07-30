@@ -31,12 +31,12 @@ export const useUsersStore = defineStore('users', () => {
     return data
   }
 
-  async function updateRole(id, role) {
-    const { data } = await api.patch(`/api/users/${id}`, { role })
+  async function update(id, payload) {
+    const { data } = await api.patch(`/api/users/${id}`, payload)
     const idx = users.value.findIndex((u) => u.id === id)
     if (idx !== -1) users.value[idx] = data
     return data
   }
 
-  return { users, loading, error, fetchAll, searchHris, create, updateRole }
+  return { users, loading, error, fetchAll, searchHris, create, update }
 })

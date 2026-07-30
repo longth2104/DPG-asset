@@ -12,8 +12,14 @@ class UserCreate(BaseModel):
     hris_emp_code: str | None = None
 
 
-class UserRoleUpdate(BaseModel):
-    role: str
+class UserUpdate(BaseModel):
+    role: str | None = None
+    # "Removing" a user deactivates their account (blocks login, matching
+    # the is_active check already enforced in get_current_user) rather than
+    # deleting the row — several tables (requests, request_signatures,
+    # documents) cascade-delete on users.id, so a hard delete would silently
+    # wipe their request/signature/upload history along with the account.
+    is_active: bool | None = None
 
 
 class UserAdminOut(BaseModel):
