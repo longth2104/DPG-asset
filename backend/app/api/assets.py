@@ -18,6 +18,7 @@ from app.models.asset import Asset
 from app.models.asset_event import AssetEvent
 from app.models.company import Company
 from app.models.document import Document
+from app.models.request import Request, RequestItem
 from app.models.user import User
 from app.schemas.asset import (
     AssetCreate,
@@ -242,10 +243,19 @@ async def delete_assets(
         return AssetDeleteResult(deleted=0)
 
     # A single bulk statement so Postgres's own ON DELETE CASCADE (assets ->
-    # asset_events/documents/requests -> request_signatures) handles cleanup —
-    # deleting an asset here also deletes its history, documents, and any
-    # requests filed against it; the frontend confirmation dialog says so.
+    # asset_events/documents/request_items -> request_signatures) handles
+    # cleanup — deleting an asset here also deletes its history, documents,
+    # and any request line items referencing it; the frontend confirmation
+    # dialog says so.
     result = await db.execute(delete(Asset).where(Asset.id.in_(allowed_ids)))
+
+    # A request whose every item just got cascade-deleted is a bare header
+    # with nothing left in it — sweep those away too, per "requests are also
+    # deleted ... when the asset related is deleted."
+    await db.execute(
+        delete(Request).where(~Request.id.in_(select(RequestItem.request_id).distinct()))
+    )
+
     await db.commit()
     return AssetDeleteResult(deleted=result.rowcount)
 

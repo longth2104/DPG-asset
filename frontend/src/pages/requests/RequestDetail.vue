@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-primary text-white flex flex-col">
     <AppHeader />
 
-    <div class="px-4 sm:px-8 py-10 max-w-2xl mx-auto w-full">
+    <div class="px-4 sm:px-8 py-10 max-w-3xl mx-auto w-full">
       <div v-if="store.loading" class="text-muted text-sm">{{ $t('common.loading') }}</div>
 
       <template v-else-if="request">
@@ -20,9 +20,9 @@
 
         <div class="bg-white text-gray-900 rounded p-6 mb-6">
           <dl class="space-y-3 text-sm">
-            <div v-if="asset" class="grid grid-cols-2 gap-2">
-              <dt class="text-gray-500">{{ $t('requests.fields.asset') }}</dt>
-              <dd>{{ asset.asset_code }} — {{ asset.name }}</dd>
+            <div v-if="request.requester_department" class="grid grid-cols-2 gap-2">
+              <dt class="text-gray-500">{{ $t('requests.fields.requesterDepartment') }}</dt>
+              <dd>{{ request.requester_department }}</dd>
             </div>
             <div v-if="request.scope" class="grid grid-cols-2 gap-2">
               <dt class="text-gray-500">{{ $t('requests.fields.scope') }}</dt>
@@ -36,21 +36,20 @@
               <dt class="text-gray-500">{{ $t('requests.fields.toLocation') }}</dt>
               <dd>{{ request.to_location }}</dd>
             </div>
+            <div v-if="request.to_contact_name" class="grid grid-cols-2 gap-2">
+              <dt class="text-gray-500">{{ $t('requests.fields.toContactName') }}</dt>
+              <dd>
+                {{ request.to_contact_name }}
+                <span v-if="request.to_contact_title" class="text-gray-500">— {{ request.to_contact_title }}</span>
+              </dd>
+            </div>
             <div v-if="request.justification" class="grid grid-cols-2 gap-2">
               <dt class="text-gray-500">{{ $t('requests.fields.justification') }}</dt>
               <dd class="break-words">{{ request.justification }}</dd>
             </div>
-            <div v-if="request.estimated_cost != null" class="grid grid-cols-2 gap-2">
-              <dt class="text-gray-500">{{ $t('requests.fields.estimatedCost') }}</dt>
-              <dd>{{ formatCurrency(request.estimated_cost) }}</dd>
-            </div>
             <div v-if="request.reason" class="grid grid-cols-2 gap-2">
               <dt class="text-gray-500">{{ $t('requests.fields.reason') }}</dt>
               <dd class="break-words">{{ request.reason }}</dd>
-            </div>
-            <div v-if="request.condition_note" class="grid grid-cols-2 gap-2">
-              <dt class="text-gray-500">{{ $t('requests.fields.conditionNote') }}</dt>
-              <dd class="break-words">{{ request.condition_note }}</dd>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <dt class="text-gray-500">{{ $t('requests.detail.approverRole') }}</dt>
@@ -61,6 +60,75 @@
               <dd class="break-words">{{ request.decision_note }}</dd>
             </div>
           </dl>
+
+          <!-- Items -->
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mt-5 mb-2">
+            {{ $t('requests.fields.items') }}
+          </h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border border-gray-200 rounded">
+              <thead>
+                <tr class="border-b border-gray-200 text-xs text-gray-500 uppercase">
+                  <th class="text-left px-3 py-2">{{ $t('requests.fields.itemName') }}</th>
+                  <template v-if="request.type === 'acquire'">
+                    <th class="text-left px-3 py-2">{{ $t('requests.fields.itemQuantity') }}</th>
+                    <th class="text-left px-3 py-2">{{ $t('requests.fields.itemUnitPrice') }}</th>
+                  </template>
+                  <template v-else-if="request.type === 'liquidate'">
+                    <th class="text-left px-3 py-2">{{ $t('requests.fields.itemProposedValue') }}</th>
+                    <th class="text-left px-3 py-2">{{ $t('requests.detail.approvedSalePrice') }}</th>
+                  </template>
+                  <th class="text-left px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in request.items" :key="item.id" class="border-b border-gray-100 last:border-0">
+                  <td class="px-3 py-2">{{ item.name }}</td>
+                  <template v-if="request.type === 'acquire'">
+                    <td class="px-3 py-2">{{ item.quantity }} {{ item.unit }}</td>
+                    <td class="px-3 py-2">{{ formatCurrency(item.unit_price) }}</td>
+                  </template>
+                  <template v-else-if="request.type === 'liquidate'">
+                    <td class="px-3 py-2">{{ formatCurrency(item.proposed_value) }}</td>
+                    <td class="px-3 py-2">
+                      <input
+                        v-if="canDecide"
+                        v-model.number="salePriceByItem[item.id]"
+                        type="number"
+                        min="0"
+                        class="w-32 border border-gray-300 rounded px-2 py-1 text-xs"
+                      />
+                      <span v-else>{{ formatCurrency(item.approved_sale_price) }}</span>
+                    </td>
+                  </template>
+                  <td class="px-3 py-2">
+                    <router-link
+                      v-if="item.asset_id"
+                      :to="`/assets/${item.asset_id}`"
+                      class="text-xs text-primary hover:underline"
+                    >
+                      {{ $t('requests.detail.viewAsset') }}
+                    </router-link>
+                  </td>
+                </tr>
+                <tr v-if="!request.items.length">
+                  <td class="px-3 py-2 text-gray-400" colspan="4">{{ $t('common.noResults') }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Council (liquidate) -->
+          <template v-if="request.council && request.council.length">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mt-5 mb-2">
+              {{ $t('requests.detail.council') }}
+            </h2>
+            <ul class="text-sm space-y-0.5">
+              <li v-for="(m, i) in request.council" :key="i">
+                {{ m.full_name }} — {{ $t(`admin.council.role.${m.council_role}`) }}
+              </li>
+            </ul>
+          </template>
 
           <button
             @click="downloadPdf"
@@ -147,30 +215,28 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import SignaturePad from '@/components/SignaturePad.vue'
-import { useAssetsStore } from '@/stores/assets'
 import { useAuthStore } from '@/stores/auth'
 import { useRequestsStore } from '@/stores/requests'
 import { openBlobInNewTab } from '@/utils/download'
 
 const route = useRoute()
 const store = useRequestsStore()
-const assetsStore = useAssetsStore()
 const auth = useAuthStore()
 const { t } = useI18n()
 
 const request = computed(() => store.currentRequest)
-const asset = ref(null)
 const decisionNote = ref('')
 const deciding = ref(false)
 const signedName = ref(auth.user?.full_name || '')
 const uploadedFile = ref(null)
 const padRef = ref(null)
 const signing = ref(false)
+const salePriceByItem = reactive({})
 
 function load() {
   store.fetchOne(route.params.id)
@@ -178,18 +244,6 @@ function load() {
 
 onMounted(load)
 watch(() => route.params.id, load)
-
-watch(
-  () => request.value?.asset_id,
-  async (assetId) => {
-    asset.value = assetId ? (await fetchAssetById(assetId)) : null
-  }
-)
-
-async function fetchAssetById(assetId) {
-  await assetsStore.fetchAsset(assetId)
-  return assetsStore.currentAsset
-}
 
 const isRequester = computed(() => request.value && auth.user?.id === request.value.requester_id)
 const isApprover = computed(
@@ -223,13 +277,17 @@ const signOffMessage = computed(() => {
 })
 
 function formatCurrency(value) {
+  if (value === null || value === undefined) return '—'
   return new Intl.NumberFormat('vi-VN').format(value) + 'đ'
 }
 
 async function decide(approve) {
   deciding.value = true
   try {
-    await store.decide(route.params.id, approve, decisionNote.value || null)
+    const items = Object.entries(salePriceByItem)
+      .filter(([, price]) => price !== null && price !== undefined && price !== '')
+      .map(([id, approved_sale_price]) => ({ id, approved_sale_price }))
+    await store.decide(route.params.id, approve, decisionNote.value || null, items)
   } finally {
     deciding.value = false
   }

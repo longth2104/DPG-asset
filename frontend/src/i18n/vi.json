@@ -5,7 +5,9 @@
     "profile": "Hồ sơ",
     "signOut": "Đăng xuất",
     "adminUsers": "Người dùng",
-    "adminCompanies": "Công ty"
+    "adminCompanies": "Công ty",
+    "adminCouncil": "Hội đồng thanh lý",
+    "requestsArchive": "Kho lưu trữ yêu cầu"
   },
   "auth": {
     "email": "Email",
@@ -153,6 +155,10 @@
       "asset": "Tài sản",
       "scope": "Phạm vi",
       "toHolder": "Người nhận (email)",
+      "toContactName": "Tên người nhận",
+      "toContactTitle": "Chức danh người nhận",
+      "toContactPhone": "Số điện thoại người nhận",
+      "toContactIdCard": "CCCD người nhận",
       "fromDepartment": "Phòng ban hiện tại",
       "toDepartment": "Phòng ban nhận",
       "fromLocation": "Vị trí hiện tại",
@@ -160,7 +166,22 @@
       "justification": "Lý do / mục đích sử dụng",
       "estimatedCost": "Dự toán chi phí (VNĐ)",
       "reason": "Lý do thanh lý",
-      "conditionNote": "Tình trạng hiện tại"
+      "conditionNote": "Tình trạng hiện tại",
+      "requesterDepartment": "Đơn vị của bạn",
+      "requesterDepartmentPlaceholder": "VD: Ban CNTT",
+      "items": "Danh mục thiết bị",
+      "addItem": "Thêm dòng",
+      "removeItem": "Xóa dòng",
+      "itemName": "Tên thiết bị",
+      "itemUnit": "Đơn vị tính",
+      "itemQuantity": "Số lượng",
+      "itemUnitPrice": "Đơn giá (VNĐ)",
+      "itemManufacturer": "Hãng sản xuất",
+      "itemPurpose": "Mục đích / mua cho ai",
+      "itemRemainingValue": "Giá trị còn lại (VNĐ)",
+      "itemMarketValue": "Giá thị trường (VNĐ)",
+      "itemProposedValue": "Giá trị đề xuất thanh lý (VNĐ)",
+      "itemConditionNote": "Tình trạng kỹ thuật hiện tại"
     },
     "form": {
       "transferTitle": "Yêu cầu điều động / nhận tài sản mới",
@@ -193,12 +214,24 @@
       "notYourTurn": "Bạn không liên quan đến yêu cầu này",
       "signatureOf": "Chữ ký — {role}",
       "roleRequester": "Người đề nghị",
-      "roleApprover": "Người phê duyệt"
+      "roleApprover": "Người phê duyệt",
+      "approvedSalePrice": "Giá bán duyệt (VNĐ)",
+      "viewAsset": "Xem tài sản",
+      "council": "Hội đồng thanh lý"
     },
     "list": {
       "mine": "Yêu cầu của tôi",
       "pendingForMe": "Đang chờ tôi duyệt",
       "empty": "Chưa có yêu cầu nào"
+    },
+    "archive": {
+      "title": "Kho lưu trữ yêu cầu",
+      "type": "Loại yêu cầu",
+      "status": "Trạng thái",
+      "requester": "Người đề nghị",
+      "createdAt": "Ngày tạo",
+      "confirmDeleteSelected": "Xóa {count} yêu cầu đã chọn? Hành động này không thể hoàn tác.",
+      "confirmDeleteAll": "Xóa toàn bộ {count} yêu cầu đang hiển thị (theo bộ lọc hiện tại)? Hành động này không thể hoàn tác."
     }
   },
   "admin": {
@@ -223,6 +256,20 @@
       "defaultRoleHint": "Khi thêm từ kết quả tìm kiếm HRIS sẽ dùng vai trò này — công ty được tự động suy ra từ phòng ban của họ.",
       "unmappedCompany": "chưa xác định công ty",
       "companyNotFound": "Không tìm thấy công ty với mã \"{code}\" — hãy thêm công ty đó trước trong trang Công ty."
+    },
+    "council": {
+      "title": "Hội đồng thanh lý",
+      "hint": "Danh sách thành viên hội đồng thanh lý tiêu chuẩn — được chốt lại (snapshot) vào từng hồ sơ thanh lý tại thời điểm tạo.",
+      "add": "Thêm thành viên",
+      "fullName": "Họ và tên",
+      "position": "Chức danh",
+      "role": {
+        "chu_tich": "Chủ tịch",
+        "pho_chu_tich": "Phó chủ tịch",
+        "thanh_vien": "Thành viên"
+      },
+      "roleLabel": "Vai trò",
+      "active": "Đang hoạt động"
     }
   }
 }

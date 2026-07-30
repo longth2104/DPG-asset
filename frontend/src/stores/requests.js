@@ -39,9 +39,14 @@ export const useRequestsStore = defineStore('requests', () => {
     return data
   }
 
-  async function decide(id, approve, note) {
-    const { data } = await api.post(`/api/requests/${id}/decide`, { approve, note })
+  async function decide(id, approve, note, items = []) {
+    const { data } = await api.post(`/api/requests/${id}/decide`, { approve, note, items })
     if (currentRequest.value?.id === id) currentRequest.value = data
+    return data
+  }
+
+  async function deleteMany(ids) {
+    const { data } = await api.post('/api/requests/delete', { ids })
     return data
   }
 
@@ -63,6 +68,6 @@ export const useRequestsStore = defineStore('requests', () => {
 
   return {
     requests, currentRequest, loading, error,
-    fetchList, fetchOne, create, decide, sign, fetchPdfBlob,
+    fetchList, fetchOne, create, decide, sign, fetchPdfBlob, deleteMany,
   }
 })

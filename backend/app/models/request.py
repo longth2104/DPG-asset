@@ -35,13 +35,16 @@ class Request(Base):
     requester_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    # Nullable: an `acquire` request has no asset yet — one may be created as
-    # a manual follow-up once procurement fulfillment lands in a later phase.
-    asset_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("assets.id", ondelete="CASCADE"), nullable=True, index=True
-    )
+    # Free-text department name for the requester's own unit (e.g. "Ban
+    # CNTT") — User has no department field, and the real forms print this
+    # in the header (acquire) / as Bên A (transfer's handover record), so
+    # it's captured directly on the request instead of guessed at.
+    requester_department: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # transfer: who/where it's moving from and to. acquire: where it's needed.
+    # Applies uniformly across every item in the request (one handover event
+    # can bundle several devices to the same destination, per the real
+    # Biên bản bàn giao template).
     scope: Mapped[str | None] = mapped_column(String, nullable=True)
     from_holder_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
@@ -53,14 +56,27 @@ class Request(Base):
     to_department: Mapped[str | None] = mapped_column(String, nullable=True)
     from_location: Mapped[str | None] = mapped_column(String, nullable=True)
     to_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Bên B identity block for a handover recipient without a User account
+    # (e.g. a department/branch contact) — matches the real Biên bản bàn
+    # giao's identity fields (name/title/phone/email/CCCD).
+    to_contact_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    to_contact_title: Mapped[str | None] = mapped_column(String, nullable=True)
+    to_contact_phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    to_contact_email: Mapped[str | None] = mapped_column(String, nullable=True)
+    to_contact_id_card: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    # acquire
+    # acquire: the overall intro/reason paragraph (per-item "for whom" lives
+    # on RequestItem.purpose).
     justification: Mapped[str | None] = mapped_column(Text, nullable=True)
-    estimated_cost: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
 
-    # liquidate
+    # liquidate: the overall proposal reason (per-item technical condition
+    # lives on RequestItem.condition_note).
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    condition_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # JSON snapshot (list of {full_name, position, council_role}) of the
+    # active CouncilMember roster at request creation time, so the printed
+    # assessment/accounting forms stay stable even if membership changes
+    # later. Text column — never queried into, only rendered.
+    council_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # shared approval outcome
     approver_role: Mapped[str] = mapped_column(String, nullable=False)
@@ -81,6 +97,47 @@ class Request(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class RequestItem(Base):
+    """One line item within a request — every request type is a header plus
+    a list of these, matching how the real BM forms are actually filled out
+    (a purchase memo or handover record almost always covers several
+    devices, not one)."""
+
+    __tablename__ = "request_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    request_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("requests.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # Existing asset for transfer/liquidate items; null for acquire items
+    # until approval creates the new asset (then filled in retroactively).
+    # ON DELETE CASCADE: if the linked asset is deleted, this line item goes
+    # with it — and if that empties a request of all its items, the request
+    # itself is cleaned up too (see requests.py's delete/cleanup logic).
+    asset_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("assets.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    unit: Mapped[str | None] = mapped_column(String, nullable=True)
+    quantity: Mapped[int] = mapped_column(nullable=False, default=1)
+
+    # acquire
+    unit_price: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    manufacturer: Mapped[str | None] = mapped_column(String, nullable=True)
+    purpose: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # liquidate
+    remaining_value: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    market_value: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    proposed_value: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    # Set by the approver as part of deciding the request — the Quyết định
+    # thanh lý's approved sale price, per item.
+    approved_sale_price: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    condition_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class RequestSignature(Base):

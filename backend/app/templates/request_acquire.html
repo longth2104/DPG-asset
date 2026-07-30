@@ -1,11 +1,171 @@
-{% extends "base.html" %}
-{% block fields %}
-<table class="fields">
-  <tr>
-    <th>Đề xuất cho</th>
-    <td>{{ scope_label }}{% if request.to_department %} — {{ request.to_department }}{% endif %}</td>
-  </tr>
-  <tr><th>Lý do / Mục đích sử dụng</th><td>{{ request.justification or '—' }}</td></tr>
-  <tr><th>Dự toán chi phí</th><td>{{ estimated_cost_label }}</td></tr>
-</table>
-{% endblock %}
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 12px; color: #111; }
+  .page + .page { page-break-before: always; }
+  .header { text-align: center; margin-bottom: 4px; }
+  .header .company { font-weight: bold; text-transform: uppercase; font-size: 13px; }
+  .header .dept { font-size: 12px; margin-top: 2px; }
+  .meta-right { text-align: right; font-style: italic; font-size: 11px; margin: 8px 0 16px; }
+  h1 { text-align: center; font-size: 16px; text-transform: uppercase; margin: 4px 0 6px; }
+  .subtitle { text-align: center; font-size: 12px; margin: 0 0 18px; }
+  .issuer { text-align: center; font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 16px; }
+  p { margin: 0 0 8px; }
+  p.intro, p.basis { text-align: justify; }
+  p.decree-title { text-align: center; font-weight: bold; margin: 14px 0; }
+  table.items { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  table.items th, table.items td { border: 1px solid #333; padding: 5px 7px; font-size: 11px; }
+  table.items th { background: #f2f2f2; text-align: center; }
+  table.items td.num { text-align: right; }
+  table.items tr.total td { font-weight: bold; }
+  .amount-words { font-style: italic; margin: 4px 0 14px; }
+  table.signatures { width: 100%; margin-top: 40px; border-collapse: collapse; }
+  table.signatures td { width: 50%; text-align: center; vertical-align: bottom; padding: 0 12px; }
+  .sig-box { border-top: 1px solid #333; margin-top: 60px; padding-top: 4px; font-size: 11px; }
+  .sig-image { max-height: 60px; }
+  .status-badge { display: inline-block; padding: 2px 10px; border: 1px solid #333; border-radius: 3px; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<!-- Section 1: Giấy đề nghị mua thiết bị -->
+<div class="page">
+  <div class="header">
+    <div class="company">Công ty Cổ phần Tập đoàn Đạt Phương</div>
+    <div class="dept">{{ requester_department }}</div>
+  </div>
+  <div class="meta-right">
+    Hà Nội, ngày {{ request.created_at.strftime('%d') }} tháng {{ request.created_at.strftime('%m') }} năm {{ request.created_at.strftime('%Y') }}
+  </div>
+  <h1>Giấy đề nghị mua thiết bị</h1>
+
+  <p><strong>Kính gửi:</strong> Tổng Giám đốc Công ty Cổ phần Tập đoàn Đạt Phương</p>
+  <p class="intro">{{ request.justification or 'Kính đề nghị Tổng Giám đốc duyệt chi mua một số thiết bị sau, cụ thể như sau:' }}</p>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Tên thiết bị</th>
+        <th>Mua cho ai / Thuộc phòng, ban</th>
+        <th>Đơn vị</th>
+        <th>Số lượng</th>
+        <th>Đơn giá (VNĐ)</th>
+        <th>Thành tiền (VNĐ)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.name }}</td>
+        <td>{{ item.purpose }}</td>
+        <td>{{ item.unit }}</td>
+        <td class="num">{{ item.quantity }}</td>
+        <td class="num">{{ item.unit_price_label }}</td>
+        <td class="num">{{ item.line_total_label }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total">
+        <td colspan="5" style="text-align:right">Tổng cộng:</td>
+        <td class="num">{{ grand_total_label }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {% if amount_words %}<p class="amount-words">Số tiền bằng chữ: {{ amount_words }}.</p>{% endif %}
+  <p>Kính mong Ông Tổng Giám đốc xem xét và giải quyết. Xin trân trọng cảm ơn!</p>
+
+  <table class="signatures">
+    <tr>
+      <td>
+        <div class="sig-box">Thủ trưởng đơn vị</div>
+      </td>
+      <td>
+        {% if requester_signature_image_data_uri %}
+          <img class="sig-image" src="{{ requester_signature_image_data_uri }}" />
+        {% endif %}
+        <div class="sig-box">
+          {{ requester_signature.signed_name if requester_signature else requester_name }}<br/>
+          <small>
+            Người đề nghị
+            {%- if requester_signature %} — đã ký {{ requester_signature.signed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+          </small>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+{% if request.decided_at %}
+<!-- Section 2: Quyết định mua sắm tài sản cố định -->
+<div class="page">
+  <div class="header">
+    <div class="company">Công ty Cổ phần Tập đoàn Đạt Phương</div>
+  </div>
+  <div class="meta-right">
+    Hà Nội, ngày {{ request.decided_at.strftime('%d') }} tháng {{ request.decided_at.strftime('%m') }} năm {{ request.decided_at.strftime('%Y') }}
+  </div>
+  <h1>Quyết định</h1>
+  <p class="subtitle">Về việc mua sắm tài sản cố định</p>
+  <p class="issuer">Tổng Giám đốc Công ty Cổ phần Tập đoàn Đạt Phương</p>
+
+  {% if request.status != 'rejected' %}
+  <p class="basis">Căn cứ Điều lệ Công ty Cổ phần Tập đoàn Đạt Phương;</p>
+  <p class="basis">Căn cứ yêu cầu, nhiệm vụ sản xuất kinh doanh của Công ty;</p>
+  <p class="basis">Theo đề nghị của {{ requester_department }},</p>
+  <p class="decree-title">QUYẾT ĐỊNH:</p>
+  <p><strong>Điều 1.</strong> Phê duyệt mua sắm tài sản cố định với nội dung cụ thể như sau:</p>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Tên, ký hiệu, kiểu máy móc thiết bị</th>
+        <th>Số lượng</th>
+        <th>Mục đích sử dụng</th>
+        <th>Hãng sản xuất</th>
+        <th>Giá trị bao gồm thuế GTGT (VNĐ)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.name }}</td>
+        <td class="num">{{ item.quantity }}</td>
+        <td>{{ item.purpose }}</td>
+        <td>{{ item.manufacturer }}</td>
+        <td class="num">{{ item.line_total_label }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p><strong>Điều 2.</strong> Giao cho {{ requester_department }} thực hiện các công việc liên quan đến việc mua sắm tài sản nói trên. {{ requester_department }} có trách nhiệm báo cáo lại Tổng Giám đốc quá trình mua sắm thiết bị.</p>
+  <p><strong>Điều 3.</strong> Các cá nhân, bộ phận có liên quan chịu trách nhiệm thi hành quyết định này. Quyết định có hiệu lực kể từ ngày ký.</p>
+  {% else %}
+  <p>Yêu cầu mua sắm tài sản nêu trên <strong>không được phê duyệt</strong>.</p>
+  {% endif %}
+  {% if request.decision_note %}<p><em>Ghi chú: {{ request.decision_note }}</em></p>{% endif %}
+
+  <table class="signatures">
+    <tr>
+      <td></td>
+      <td>
+        {% if approver_signature_image_data_uri %}
+          <img class="sig-image" src="{{ approver_signature_image_data_uri }}" />
+        {% endif %}
+        <div class="sig-box">
+          {{ approver_signature.signed_name if approver_signature else (approver_name or '—') }}<br/>
+          <small>
+            Tổng Giám đốc
+            {%- if approver_signature %} — đã ký {{ approver_signature.signed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+          </small>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+{% endif %}
+
+</body>
+</html>

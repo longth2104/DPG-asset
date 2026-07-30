@@ -1,24 +1,19 @@
 <template>
   <div class="min-h-screen bg-primary text-white flex flex-col">
     <AppHeader />
-    <div class="px-4 sm:px-8 py-10 max-w-2xl mx-auto w-full">
+    <div class="px-4 sm:px-8 py-10 max-w-3xl mx-auto w-full">
       <h1 class="text-2xl font-bold tracking-tight mb-8">{{ $t(`requests.form.${type}Title`) }}</h1>
 
       <form @submit.prevent="submit" class="space-y-4 bg-white text-gray-900 rounded p-6">
-        <div v-if="type === 'transfer' || type === 'liquidate'">
+        <div>
           <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-            {{ $t('requests.fields.asset') }}
+            {{ $t('requests.fields.requesterDepartment') }}
           </label>
-          <select
-            v-model="form.asset_id"
-            required
+          <input
+            v-model="form.requester_department"
+            :placeholder="$t('requests.fields.requesterDepartmentPlaceholder')"
             class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          >
-            <option value="" disabled>{{ $t('requests.form.chooseAsset') }}</option>
-            <option v-for="a in assetsStore.assets" :key="a.id" :value="a.id">
-              {{ a.asset_code }} — {{ a.name }}
-            </option>
-          </select>
+          />
         </div>
 
         <div v-if="scopeOptions.length">
@@ -44,6 +39,32 @@
               type="email"
               class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
             />
+          </div>
+          <div v-else class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                {{ $t('requests.fields.toContactName') }}
+              </label>
+              <input v-model="form.to_contact_name" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                {{ $t('requests.fields.toContactTitle') }}
+              </label>
+              <input v-model="form.to_contact_title" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                {{ $t('requests.fields.toContactPhone') }}
+              </label>
+              <input v-model="form.to_contact_phone" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                {{ $t('requests.fields.toContactIdCard') }}
+              </label>
+              <input v-model="form.to_contact_id_card" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -74,47 +95,95 @@
             </label>
             <textarea
               v-model="form.justification"
-              rows="3"
-              required
-              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              {{ $t('requests.fields.estimatedCost') }}
-            </label>
-            <input
-              v-model.number="form.estimated_cost"
-              type="number"
-              min="0"
+              rows="2"
               class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
             />
           </div>
         </template>
 
-        <template v-if="type === 'liquidate'">
-          <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              {{ $t('requests.fields.reason') }}
+        <div v-if="type === 'liquidate'">
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+            {{ $t('requests.fields.reason') }}
+          </label>
+          <textarea
+            v-model="form.reason"
+            rows="2"
+            required
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+          />
+        </div>
+
+        <!-- Item rows -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {{ $t('requests.fields.items') }}
             </label>
-            <textarea
-              v-model="form.reason"
-              rows="3"
-              required
-              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-            />
+            <button
+              type="button"
+              @click="addItem"
+              class="text-xs font-semibold text-primary hover:underline"
+            >
+              + {{ $t('requests.fields.addItem') }}
+            </button>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              {{ $t('requests.fields.conditionNote') }}
-            </label>
-            <textarea
-              v-model="form.condition_note"
-              rows="3"
-              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-            />
+
+          <div
+            v-for="(item, idx) in items"
+            :key="idx"
+            class="border border-gray-200 rounded p-3 mb-2 space-y-2"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-gray-400">#{{ idx + 1 }}</span>
+              <button
+                v-if="items.length > 1"
+                type="button"
+                @click="removeItem(idx)"
+                class="text-xs text-red-600 hover:underline"
+              >
+                {{ $t('requests.fields.removeItem') }}
+              </button>
+            </div>
+
+            <template v-if="type === 'acquire'">
+              <input
+                v-model="item.name"
+                :placeholder="$t('requests.fields.itemName')"
+                required
+                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+              <div class="grid grid-cols-3 gap-2">
+                <input v-model="item.unit" :placeholder="$t('requests.fields.itemUnit')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input v-model.number="item.quantity" type="number" min="1" :placeholder="$t('requests.fields.itemQuantity')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input v-model.number="item.unit_price" type="number" min="0" :placeholder="$t('requests.fields.itemUnitPrice')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input v-model="item.manufacturer" :placeholder="$t('requests.fields.itemManufacturer')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input v-model="item.purpose" :placeholder="$t('requests.fields.itemPurpose')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+            </template>
+
+            <template v-else-if="type === 'liquidate'">
+              <select v-model="item.asset_id" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                <option value="" disabled>{{ $t('requests.form.chooseAsset') }}</option>
+                <option v-for="a in assetsStore.assets" :key="a.id" :value="a.id">{{ a.asset_code }} — {{ a.name }}</option>
+              </select>
+              <div class="grid grid-cols-3 gap-2">
+                <input v-model.number="item.remaining_value" type="number" min="0" :placeholder="$t('requests.fields.itemRemainingValue')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input v-model.number="item.market_value" type="number" min="0" :placeholder="$t('requests.fields.itemMarketValue')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input v-model.number="item.proposed_value" type="number" min="0" :placeholder="$t('requests.fields.itemProposedValue')" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <textarea v-model="item.condition_note" rows="2" :placeholder="$t('requests.fields.itemConditionNote')" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </template>
+
+            <template v-else>
+              <select v-model="item.asset_id" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                <option value="" disabled>{{ $t('requests.form.chooseAsset') }}</option>
+                <option v-for="a in assetsStore.assets" :key="a.id" :value="a.id">{{ a.asset_code }} — {{ a.name }}</option>
+              </select>
+            </template>
           </div>
-        </template>
+        </div>
 
         <p v-if="error" class="text-red-600 text-xs">{{ $t(error) }}</p>
 
@@ -156,31 +225,61 @@ const scopeOptions = computed(() => SCOPE_OPTIONS_BY_TYPE[type.value] || [])
 
 function blankForm() {
   return {
-    asset_id: route.query.assetId || '',
+    requester_department: '',
     scope: scopeOptions.value[0] || null,
     to_department: '',
     to_location: '',
+    to_contact_name: '',
+    to_contact_title: '',
+    to_contact_phone: '',
+    to_contact_id_card: '',
     justification: '',
-    estimated_cost: null,
     reason: '',
-    condition_note: '',
   }
 }
 
-const form = reactive(blankForm())
+function blankItem() {
+  const preselected = route.query.assetId || ''
+  if (type.value === 'acquire') {
+    return { name: '', unit: '', quantity: 1, unit_price: null, manufacturer: '', purpose: '' }
+  }
+  if (type.value === 'liquidate') {
+    return {
+      asset_id: preselected,
+      remaining_value: null,
+      market_value: null,
+      proposed_value: null,
+      condition_note: '',
+    }
+  }
+  return { asset_id: preselected }
+}
 
-watch(type, () => Object.assign(form, blankForm()))
+const form = reactive(blankForm())
+const items = ref([blankItem()])
+
+watch(type, () => {
+  Object.assign(form, blankForm())
+  items.value = [blankItem()]
+})
 
 onMounted(() => {
   if (!assetsStore.assets.length) assetsStore.fetchAssets()
 })
 
+function addItem() {
+  items.value.push(blankItem())
+}
+
+function removeItem(idx) {
+  items.value.splice(idx, 1)
+}
+
 const canSubmit = computed(() => {
   if (submitting.value) return false
-  if (type.value === 'transfer') return !!form.asset_id
-  if (type.value === 'acquire') return !!form.justification
-  if (type.value === 'liquidate') return !!form.asset_id && !!form.reason
-  return false
+  if (type.value === 'acquire') return items.value.every((i) => i.name)
+  if (type.value === 'liquidate') return !!form.reason && items.value.every((i) => i.asset_id)
+  return items.value.every((i) => i.asset_id)
 })
 
 async function submit() {
@@ -188,11 +287,11 @@ async function submit() {
   submitting.value = true
   error.value = ''
   try {
-    const payload = { type: type.value }
-
-    if (type.value === 'transfer' || type.value === 'liquidate') {
-      payload.asset_id = form.asset_id
+    const payload = {
+      type: type.value,
+      requester_department: form.requester_department || null,
     }
+
     if (type.value === 'transfer' || type.value === 'acquire') {
       payload.scope = form.scope
     }
@@ -202,16 +301,35 @@ async function submit() {
       if (form.scope === 'individual' && toHolderEmail.value) {
         const { data } = await api.get('/api/users/lookup', { params: { email: toHolderEmail.value } })
         payload.to_holder_user_id = data.id
+      } else {
+        payload.to_contact_name = form.to_contact_name || null
+        payload.to_contact_title = form.to_contact_title || null
+        payload.to_contact_phone = form.to_contact_phone || null
+        payload.to_contact_id_card = form.to_contact_id_card || null
       }
+      payload.items = items.value.map((i) => ({ asset_id: i.asset_id }))
     }
     if (type.value === 'acquire') {
       payload.to_department = form.to_department || null
-      payload.justification = form.justification
-      payload.estimated_cost = form.estimated_cost
+      payload.justification = form.justification || null
+      payload.items = items.value.map((i) => ({
+        name: i.name,
+        unit: i.unit || null,
+        quantity: i.quantity || 1,
+        unit_price: i.unit_price,
+        manufacturer: i.manufacturer || null,
+        purpose: i.purpose || null,
+      }))
     }
     if (type.value === 'liquidate') {
       payload.reason = form.reason
-      payload.condition_note = form.condition_note || null
+      payload.items = items.value.map((i) => ({
+        asset_id: i.asset_id,
+        remaining_value: i.remaining_value,
+        market_value: i.market_value,
+        proposed_value: i.proposed_value,
+        condition_note: i.condition_note || null,
+      }))
     }
 
     const created = await requestsStore.create(payload)

@@ -34,6 +34,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/requests/archive',
+    name: 'requests-archive',
+    component: () => import('@/pages/RequestsArchive.vue'),
+    meta: { requiresAuth: true, requiresAssetManager: true },
+  },
+  {
     path: '/requests/:id',
     name: 'request-detail',
     component: () => import('@/pages/requests/RequestDetail.vue'),
@@ -57,6 +63,12 @@ const routes = [
     component: () => import('@/pages/admin/Users.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
+  {
+    path: '/admin/council-members',
+    name: 'admin-council-members',
+    component: () => import('@/pages/admin/CouncilMembers.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
@@ -71,6 +83,7 @@ router.beforeEach(async (to) => {
   await auth.ensureInit()
   if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login'
   if (to.meta.requiresAdmin && !auth.isAdmin) return '/'
+  if (to.meta.requiresAssetManager && !auth.isAssetManager) return '/'
   if (to.path === '/login' && auth.isAuthenticated) return '/'
 })
 

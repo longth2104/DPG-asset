@@ -5,7 +5,9 @@
     "profile": "Profile",
     "signOut": "Sign out",
     "adminUsers": "Users",
-    "adminCompanies": "Companies"
+    "adminCompanies": "Companies",
+    "adminCouncil": "Liquidation council",
+    "requestsArchive": "Requests archive"
   },
   "auth": {
     "email": "Email",
@@ -153,6 +155,10 @@
       "asset": "Asset",
       "scope": "Scope",
       "toHolder": "Recipient (email)",
+      "toContactName": "Recipient name",
+      "toContactTitle": "Recipient title",
+      "toContactPhone": "Recipient phone",
+      "toContactIdCard": "Recipient ID card (CCCD)",
       "fromDepartment": "From department",
       "toDepartment": "To department",
       "fromLocation": "From location",
@@ -160,7 +166,22 @@
       "justification": "Justification / intended use",
       "estimatedCost": "Estimated cost (VND)",
       "reason": "Reason for liquidation",
-      "conditionNote": "Current condition"
+      "conditionNote": "Current condition",
+      "requesterDepartment": "Your department",
+      "requesterDepartmentPlaceholder": "e.g. Ban CNTT",
+      "items": "Items",
+      "addItem": "Add item",
+      "removeItem": "Remove",
+      "itemName": "Device name",
+      "itemUnit": "Unit",
+      "itemQuantity": "Quantity",
+      "itemUnitPrice": "Unit price (VND)",
+      "itemManufacturer": "Manufacturer",
+      "itemPurpose": "Purpose / for whom",
+      "itemRemainingValue": "Remaining value (VND)",
+      "itemMarketValue": "Market value (VND)",
+      "itemProposedValue": "Proposed liquidation value (VND)",
+      "itemConditionNote": "Current technical condition"
     },
     "form": {
       "transferTitle": "New transfer / receive request",
@@ -193,12 +214,24 @@
       "notYourTurn": "You aren't a party to this request",
       "signatureOf": "Signature — {role}",
       "roleRequester": "Requester",
-      "roleApprover": "Approver"
+      "roleApprover": "Approver",
+      "approvedSalePrice": "Approved sale price (VND)",
+      "viewAsset": "View asset",
+      "council": "Liquidation council"
     },
     "list": {
       "mine": "My requests",
       "pendingForMe": "Awaiting my approval",
       "empty": "No requests yet"
+    },
+    "archive": {
+      "title": "Requests archive",
+      "type": "Type",
+      "status": "Status",
+      "requester": "Requester",
+      "createdAt": "Created",
+      "confirmDeleteSelected": "Delete {count} selected request(s)? This cannot be undone.",
+      "confirmDeleteAll": "Delete all {count} listed request(s) (matching the current filters)? This cannot be undone."
     }
   },
   "admin": {
@@ -223,6 +256,20 @@
       "defaultRoleHint": "New adds from HRIS search use this role — company is inferred automatically from their department.",
       "unmappedCompany": "no company match",
       "companyNotFound": "No company found for HRIS code \"{code}\" — add it first on the Companies page."
+    },
+    "council": {
+      "title": "Liquidation council",
+      "hint": "Standing roster of liquidation council members — snapshotted into each liquidation request at creation time.",
+      "add": "Add member",
+      "fullName": "Full name",
+      "position": "Position",
+      "role": {
+        "chu_tich": "Chair",
+        "pho_chu_tich": "Vice chair",
+        "thanh_vien": "Member"
+      },
+      "roleLabel": "Role",
+      "active": "Active"
     }
   }
 }
