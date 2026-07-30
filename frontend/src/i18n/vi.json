@@ -216,12 +216,12 @@
       "hint": "Ứng dụng chỉ cho phép người dùng đã được thêm trước truy cập — hãy thêm người dùng tại đây trước khi họ có thể đăng nhập.",
       "searchHris": "Tìm kiếm HRIS",
       "searchPlaceholder": "Tìm theo tên, email hoặc mã nhân viên...",
-      "usePicker": "Chọn →",
-      "add": "Thêm người dùng",
       "fullName": "Họ và tên",
-      "chooseRole": "Chọn vai trò",
-      "chooseCompany": "Chọn công ty",
-      "linkedHris": "Nhân viên HRIS liên kết"
+      "loadingDirectory": "Đang tải danh sách HRIS...",
+      "adding": "Đang thêm...",
+      "defaultRoleHint": "Khi thêm từ kết quả tìm kiếm HRIS sẽ dùng vai trò này — công ty được tự động suy ra từ phòng ban của họ.",
+      "unmappedCompany": "chưa xác định công ty",
+      "companyNotFound": "Không tìm thấy công ty với mã \"{code}\" — hãy thêm công ty đó trước trong trang Công ty."
     }
   }
 }

@@ -216,12 +216,12 @@
       "hint": "This app is access-by-invitation only — add a user here before they can sign in.",
       "searchHris": "Search HRIS",
       "searchPlaceholder": "Search by name, email, or employee code...",
-      "usePicker": "Use →",
-      "add": "Add user",
       "fullName": "Full name",
-      "chooseRole": "Choose a role",
-      "chooseCompany": "Choose a company",
-      "linkedHris": "Linked HRIS employee"
+      "loadingDirectory": "Loading HRIS directory...",
+      "adding": "Adding...",
+      "defaultRoleHint": "New adds from HRIS search use this role — company is inferred automatically from their department.",
+      "unmappedCompany": "no company match",
+      "companyNotFound": "No company found for HRIS code \"{code}\" — add it first on the Companies page."
     }
   }
 }

@@ -6,84 +6,61 @@
       <h1 class="text-2xl font-bold tracking-tight mb-2">{{ $t('admin.users.title') }}</h1>
       <p class="text-sm text-white/70 mb-6">{{ $t('admin.users.hint') }}</p>
 
-      <!-- HRIS search -->
+      <!-- HRIS live search -->
       <div class="bg-white text-gray-900 rounded p-6 mb-6">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-3">
           {{ $t('admin.users.searchHris') }}
         </h2>
-        <div class="flex gap-2 mb-3">
-          <input
-            v-model="query"
-            @keyup.enter="doSearch"
-            :placeholder="$t('admin.users.searchPlaceholder')"
-            class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          />
-          <button
-            @click="doSearch"
-            :disabled="searching"
-            class="bg-primary hover:bg-primary-hover disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-          >
-            {{ $t('common.search') }}
-          </button>
-        </div>
-        <p v-if="searchError" class="text-red-600 text-xs mb-2">{{ $t(searchError) }}</p>
-        <ul v-if="results.length" class="divide-y divide-gray-200 border border-gray-200 rounded">
-          <li
-            v-for="r in results"
-            :key="r.emp_code"
-            class="flex items-center justify-between gap-3 p-3 text-sm hover:bg-gray-50 cursor-pointer"
-            @click="pickResult(r)"
-          >
-            <div>
-              <p class="font-medium">{{ r.name }}</p>
-              <p class="text-xs text-gray-500">{{ r.email }} · {{ r.dept_name }} ({{ r.dept_code }})</p>
-            </div>
-            <span class="text-xs font-semibold text-primary">{{ $t('admin.users.usePicker') }}</span>
-          </li>
-        </ul>
-      </div>
 
-      <!-- Add user form -->
-      <form @submit.prevent="submitCreate" class="bg-white text-gray-900 rounded p-6 mb-6 space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500">
-          {{ $t('admin.users.add') }}
-        </h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input
-            v-model="form.email"
-            type="email"
-            :placeholder="$t('auth.email')"
-            required
-            class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          />
-          <input
-            v-model="form.full_name"
-            :placeholder="$t('admin.users.fullName')"
-            class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          />
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <select v-model="form.role" required class="border border-gray-300 rounded px-3 py-2 text-sm">
-            <option value="" disabled>{{ $t('admin.users.chooseRole') }}</option>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+          <div class="relative sm:col-span-2" ref="searchBoxRef">
+            <input
+              v-model="query"
+              @focus="dropdownOpen = true"
+              :placeholder="$t('admin.users.searchPlaceholder')"
+              :disabled="loadingDirectory"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            />
+            <p v-if="loadingDirectory" class="text-xs text-gray-400 mt-1">{{ $t('admin.users.loadingDirectory') }}</p>
+
+            <div
+              v-if="dropdownOpen && query.trim() && filteredResults.length"
+              class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg max-h-80 overflow-y-auto"
+            >
+              <button
+                v-for="r in filteredResults"
+                :key="r.emp_code"
+                type="button"
+                :disabled="adding === r.emp_code"
+                @click="addFromHris(r)"
+                class="w-full flex items-center justify-between gap-3 p-3 text-sm text-left hover:bg-gray-50 disabled:opacity-50 border-b border-gray-100 last:border-0"
+              >
+                <div class="min-w-0">
+                  <p class="font-medium truncate">{{ r.name }}</p>
+                  <p class="text-xs text-gray-500 truncate">
+                    {{ r.email }} · {{ r.job_title }} · {{ r.dept_name }}
+                  </p>
+                </div>
+                <span class="text-xs font-semibold text-primary flex-shrink-0">
+                  {{ adding === r.emp_code ? $t('admin.users.adding') : companyBadge(r.suggested_company_code) }}
+                </span>
+              </button>
+            </div>
+            <p
+              v-else-if="dropdownOpen && query.trim() && !filteredResults.length && !loadingDirectory"
+              class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg p-3 text-sm text-gray-400"
+            >
+              {{ $t('common.noResults') }}
+            </p>
+          </div>
+
+          <select v-model="defaultRole" class="border border-gray-300 rounded px-3 py-2 text-sm">
             <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
           </select>
-          <select v-model="form.company_id" required class="border border-gray-300 rounded px-3 py-2 text-sm">
-            <option value="" disabled>{{ $t('admin.users.chooseCompany') }}</option>
-            <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
-          </select>
         </div>
-        <p v-if="form.hris_emp_code" class="text-xs text-gray-500">
-          {{ $t('admin.users.linkedHris') }}: {{ form.hris_emp_code }}
-        </p>
-        <button
-          type="submit"
-          :disabled="!form.email || !form.role || !form.company_id || submitting"
-          class="bg-brand hover:opacity-90 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded transition-opacity"
-        >
-          {{ $t('admin.users.add') }}
-        </button>
-        <p v-if="createError" class="text-red-600 text-xs">{{ $t(createError) }}</p>
-      </form>
+        <p class="text-xs text-gray-500 mb-2">{{ $t('admin.users.defaultRoleHint') }}</p>
+        <p v-if="addError" class="text-red-600 text-xs">{{ $t(addError) }}</p>
+      </div>
 
       <div v-if="usersStore.loading" class="text-sm text-white/70">{{ $t('common.loading') }}</div>
       <div v-else class="bg-white text-gray-900 rounded overflow-hidden">
@@ -111,7 +88,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppHeader from '@/components/AppHeader.vue'
 import { useCompaniesStore } from '@/stores/companies'
 import { useUsersStore } from '@/stores/users'
@@ -120,55 +98,90 @@ const ROLES = ['cbnv', 'phong_thiet_bi', 'hcns_truong_phong', 'lanh_dao_noi_chin
 
 const usersStore = useUsersStore()
 const companiesStore = useCompaniesStore()
+const { t } = useI18n()
 
 const query = ref('')
-const results = ref([])
-const searching = ref(false)
-const searchError = ref('')
+const dropdownOpen = ref(false)
+const searchBoxRef = ref(null)
+const hrisDirectory = ref([])
+const loadingDirectory = ref(false)
+const defaultRole = ref('cbnv')
+const adding = ref(null)
+const addError = ref('')
 
-const form = reactive({ email: '', full_name: '', role: '', company_id: '', hris_emp_code: null })
-const submitting = ref(false)
-const createError = ref('')
-
-onMounted(() => {
+onMounted(async () => {
   usersStore.fetchAll()
   companiesStore.fetchAll()
+  document.addEventListener('click', handleOutsideClick, true)
+
+  loadingDirectory.value = true
+  try {
+    hrisDirectory.value = await usersStore.searchHris()
+  } catch (e) {
+    addError.value = e.response?.data?.detail ?? 'common.genericError'
+  } finally {
+    loadingDirectory.value = false
+  }
 })
 
-async function doSearch() {
-  searching.value = true
-  searchError.value = ''
-  try {
-    results.value = await usersStore.searchHris(query.value)
-  } catch (e) {
-    searchError.value = e.response?.data?.detail ?? 'common.genericError'
-  } finally {
-    searching.value = false
+onBeforeUnmount(() => document.removeEventListener('click', handleOutsideClick, true))
+
+function handleOutsideClick(e) {
+  if (searchBoxRef.value && !searchBoxRef.value.contains(e.target)) {
+    dropdownOpen.value = false
   }
 }
 
-function pickResult(r) {
-  form.email = r.email || ''
-  form.full_name = r.name || ''
-  form.hris_emp_code = r.emp_code || null
-  const match = companiesStore.companies.find((c) => c.code === r.suggested_company_code)
-  if (match) form.company_id = match.id
+// HRIS employees already added as local users — hide them from the picker
+// so a match can't be clicked twice into a 409.
+const addedEmpCodes = computed(
+  () => new Set(usersStore.users.map((u) => u.hris_emp_code).filter(Boolean))
+)
+
+const filteredResults = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return []
+  return hrisDirectory.value
+    .filter((e) => !addedEmpCodes.value.has(e.emp_code))
+    .filter(
+      (e) =>
+        (e.name || '').toLowerCase().includes(q) ||
+        (e.email || '').toLowerCase().includes(q) ||
+        (e.emp_code || '').toLowerCase().includes(q)
+    )
+    .slice(0, 20)
+})
+
+function companyBadge(code) {
+  const c = companiesStore.companies.find((x) => x.code === code)
+  return c ? c.code : t('admin.users.unmappedCompany')
 }
 
-async function submitCreate() {
-  submitting.value = true
-  createError.value = ''
+async function addFromHris(emp) {
+  if (adding.value) return
+  addError.value = ''
+
+  const company = companiesStore.companies.find((c) => c.code === emp.suggested_company_code)
+  if (!company) {
+    addError.value = t('admin.users.companyNotFound', { code: emp.suggested_company_code || '?' })
+    return
+  }
+
+  adding.value = emp.emp_code
   try {
-    await usersStore.create({ ...form })
-    form.email = ''
-    form.full_name = ''
-    form.role = ''
-    form.company_id = ''
-    form.hris_emp_code = null
+    await usersStore.create({
+      email: emp.email,
+      full_name: emp.name,
+      role: defaultRole.value,
+      company_id: company.id,
+      hris_emp_code: emp.emp_code,
+    })
+    query.value = ''
+    dropdownOpen.value = false
   } catch (e) {
-    createError.value = e.response?.data?.detail ?? 'common.genericError'
+    addError.value = e.response?.data?.detail ?? 'common.genericError'
   } finally {
-    submitting.value = false
+    adding.value = null
   }
 }
 
