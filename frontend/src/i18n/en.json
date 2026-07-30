@@ -264,10 +264,8 @@
       "unmappedCompany": "no company match",
       "companyNotFound": "No company found for HRIS code \"{code}\" — add it first on the Companies page.",
       "cannotEditOwnRole": "You can't change your own role — ask another admin",
-      "removedBadge": "Removed",
       "remove": "Remove",
-      "restore": "Restore",
-      "confirmRemove": "Remove {email}? They'll no longer be able to sign in, but their asset/request history is kept — you can restore access later."
+      "confirmRemove": "Permanently delete {email}? This cannot be undone — it also permanently deletes every request they filed or signed, and every document they uploaded."
     },
     "council": {
       "title": "Liquidation council",

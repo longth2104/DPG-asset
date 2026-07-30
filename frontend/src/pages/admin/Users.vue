@@ -77,18 +77,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="u in usersStore.users"
-              :key="u.id"
-              class="border-b border-gray-200"
-              :class="{ 'opacity-50': !u.is_active }"
-            >
-              <td class="px-4 py-3">
-                {{ u.email }}
-                <span v-if="!u.is_active" class="ml-1 text-xs font-semibold text-red-600 uppercase">
-                  {{ $t('admin.users.removedBadge') }}
-                </span>
-              </td>
+            <tr v-for="u in usersStore.users" :key="u.id" class="border-b border-gray-200">
+              <td class="px-4 py-3">{{ u.email }}</td>
               <td class="px-4 py-3">{{ u.full_name || '—' }}</td>
               <td class="px-4 py-3">
                 <select
@@ -105,12 +95,11 @@
               <td class="px-4 py-3">
                 <button
                   v-if="u.id !== auth.user?.id"
-                  @click="toggleActive(u)"
+                  @click="removeUser(u)"
                   :disabled="rowUpdating === u.id"
-                  class="text-xs font-semibold hover:underline disabled:opacity-50"
-                  :class="u.is_active ? 'text-red-600' : 'text-primary'"
+                  class="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
                 >
-                  {{ u.is_active ? $t('admin.users.remove') : $t('admin.users.restore') }}
+                  {{ $t('admin.users.remove') }}
                 </button>
               </td>
             </tr>
@@ -236,14 +225,13 @@ async function changeRole(user, role) {
   }
 }
 
-async function toggleActive(user) {
-  const goingActive = !user.is_active
-  if (!goingActive && !confirm(t('admin.users.confirmRemove', { email: user.email }))) return
+async function removeUser(user) {
+  if (!confirm(t('admin.users.confirmRemove', { email: user.email }))) return
 
   rowUpdating.value = user.id
   rowError.value = ''
   try {
-    await usersStore.update(user.id, { is_active: goingActive })
+    await usersStore.remove(user.id)
   } catch (e) {
     rowError.value = e.response?.data?.detail ?? t('common.genericError')
   } finally {

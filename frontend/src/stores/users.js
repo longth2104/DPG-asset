@@ -38,5 +38,10 @@ export const useUsersStore = defineStore('users', () => {
     return data
   }
 
-  return { users, loading, error, fetchAll, searchHris, create, update }
+  async function remove(id) {
+    await api.delete(`/api/users/${id}`)
+    users.value = users.value.filter((u) => u.id !== id)
+  }
+
+  return { users, loading, error, fetchAll, searchHris, create, update, remove }
 })

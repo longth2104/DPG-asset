@@ -264,10 +264,8 @@
       "unmappedCompany": "chưa xác định công ty",
       "companyNotFound": "Không tìm thấy công ty với mã \"{code}\" — hãy thêm công ty đó trước trong trang Công ty.",
       "cannotEditOwnRole": "Bạn không thể tự đổi vai trò của mình — nhờ một quản trị viên khác",
-      "removedBadge": "Đã xóa",
       "remove": "Xóa",
-      "restore": "Khôi phục",
-      "confirmRemove": "Xóa {email}? Người này sẽ không thể đăng nhập nữa, nhưng lịch sử tài sản/yêu cầu vẫn được giữ nguyên — bạn có thể khôi phục quyền truy cập sau."
+      "confirmRemove": "Xóa vĩnh viễn {email}? Hành động này không thể hoàn tác — mọi yêu cầu người này đã tạo hoặc ký, và mọi tài liệu đã tải lên, cũng sẽ bị xóa vĩnh viễn."
     },
     "council": {
       "title": "Hội đồng thanh lý",

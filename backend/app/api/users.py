@@ -148,3 +148,24 @@ async def update_user(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current: User = Depends(require_admin),
+):
+    """Permanently deletes the user row. Requests/request_signatures/
+    documents cascade-delete on users.id, so this also erases everything
+    they filed, signed, or uploaded — an explicit choice over the reversible
+    is_active toggle above, made knowing that trade-off."""
+    if user_id == current.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot delete your own account")
+
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+
+    await db.delete(user)
+    await db.commit()
