@@ -12,6 +12,10 @@ class UserCreate(BaseModel):
     hris_emp_code: str | None = None
 
 
+class UserRoleUpdate(BaseModel):
+    role: str
+
+
 class UserAdminOut(BaseModel):
     id: uuid.UUID
     email: str

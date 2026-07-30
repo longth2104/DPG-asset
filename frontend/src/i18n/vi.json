@@ -262,7 +262,8 @@
       "adding": "Đang thêm...",
       "defaultRoleHint": "Khi thêm từ kết quả tìm kiếm HRIS sẽ dùng vai trò này — công ty được tự động suy ra từ phòng ban của họ.",
       "unmappedCompany": "chưa xác định công ty",
-      "companyNotFound": "Không tìm thấy công ty với mã \"{code}\" — hãy thêm công ty đó trước trong trang Công ty."
+      "companyNotFound": "Không tìm thấy công ty với mã \"{code}\" — hãy thêm công ty đó trước trong trang Công ty.",
+      "cannotEditOwnRole": "Bạn không thể tự đổi vai trò của mình — nhờ một quản trị viên khác"
     },
     "council": {
       "title": "Hội đồng thanh lý",

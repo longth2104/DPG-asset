@@ -62,6 +62,8 @@
         <p v-if="addError" class="text-red-600 text-xs">{{ $t(addError) }}</p>
       </div>
 
+      <p v-if="roleError" class="text-red-400 text-xs mb-3">{{ roleError }}</p>
+
       <div v-if="usersStore.loading" class="text-sm text-white/70">{{ $t('common.loading') }}</div>
       <div v-else class="bg-white text-gray-900 rounded overflow-hidden">
         <table class="w-full text-sm">
@@ -77,7 +79,17 @@
             <tr v-for="u in usersStore.users" :key="u.id" class="border-b border-gray-200">
               <td class="px-4 py-3">{{ u.email }}</td>
               <td class="px-4 py-3">{{ u.full_name || '—' }}</td>
-              <td class="px-4 py-3">{{ u.role }}</td>
+              <td class="px-4 py-3">
+                <select
+                  :value="u.role"
+                  :disabled="u.id === auth.user?.id || roleUpdating === u.id"
+                  @change="changeRole(u, $event.target.value)"
+                  :title="u.id === auth.user?.id ? $t('admin.users.cannotEditOwnRole') : ''"
+                  class="border border-gray-300 rounded px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
+                </select>
+              </td>
               <td class="px-4 py-3">{{ companyLabel(u.company_id) }}</td>
             </tr>
           </tbody>
@@ -91,6 +103,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppHeader from '@/components/AppHeader.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useCompaniesStore } from '@/stores/companies'
 import { useUsersStore } from '@/stores/users'
 
@@ -98,7 +111,10 @@ const ROLES = ['cbnv', 'phong_thiet_bi', 'hcns_truong_phong', 'lanh_dao_noi_chin
 
 const usersStore = useUsersStore()
 const companiesStore = useCompaniesStore()
+const auth = useAuthStore()
 const { t } = useI18n()
+const roleUpdating = ref(null)
+const roleError = ref('')
 
 const query = ref('')
 const dropdownOpen = ref(false)
@@ -182,6 +198,19 @@ async function addFromHris(emp) {
     addError.value = e.response?.data?.detail ?? 'common.genericError'
   } finally {
     adding.value = null
+  }
+}
+
+async function changeRole(user, role) {
+  if (role === user.role) return
+  roleUpdating.value = user.id
+  roleError.value = ''
+  try {
+    await usersStore.updateRole(user.id, role)
+  } catch (e) {
+    roleError.value = e.response?.data?.detail ?? t('common.genericError')
+  } finally {
+    roleUpdating.value = null
   }
 }
 

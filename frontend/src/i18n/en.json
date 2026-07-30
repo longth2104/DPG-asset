@@ -262,7 +262,8 @@
       "adding": "Adding...",
       "defaultRoleHint": "New adds from HRIS search use this role — company is inferred automatically from their department.",
       "unmappedCompany": "no company match",
-      "companyNotFound": "No company found for HRIS code \"{code}\" — add it first on the Companies page."
+      "companyNotFound": "No company found for HRIS code \"{code}\" — add it first on the Companies page.",
+      "cannotEditOwnRole": "You can't change your own role — ask another admin"
     },
     "council": {
       "title": "Liquidation council",
