@@ -19,6 +19,7 @@
   "common": {
     "loading": "Đang tải...",
     "save": "Lưu",
+    "saving": "Đang lưu...",
     "cancel": "Hủy",
     "create": "Tạo mới",
     "search": "Tìm kiếm",

@@ -18,6 +18,13 @@
               {{ $t(`assets.status.${asset.status}`) }}
             </span>
             <button
+              v-if="auth.isAssetManager && !editing"
+              @click="startEdit"
+              class="bg-white hover:bg-gray-100 text-gray-900 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+            >
+              {{ $t('assetDetail.edit') }}
+            </button>
+            <button
               @click="printDossier"
               class="bg-white hover:bg-gray-100 text-gray-900 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
             >
@@ -32,7 +39,99 @@
             <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
               {{ $t('assetDetail.profile') }}
             </h2>
-            <dl class="space-y-3 text-sm">
+            <form v-if="editing" @submit.prevent="saveEdit" class="space-y-3 text-sm">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.name') }}</label>
+                  <input v-model="editForm.name" required class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.code') }}</label>
+                  <input v-model="editForm.asset_code" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.category') }}</label>
+                  <input v-model="editForm.category" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.serialNumber') }}</label>
+                  <input v-model="editForm.serial_number" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.spec') }}</label>
+                <textarea v-model="editForm.spec" rows="2" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.manufacturer') }}</label>
+                  <input v-model="editForm.manufacturer" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.status') }}</label>
+                  <select v-model="editForm.status" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary">
+                    <option v-for="s in ASSET_STATUSES" :key="s" :value="s">{{ $t(`assets.status.${s}`) }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.department') }}</label>
+                  <input v-model="editForm.department" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.holder') }}</label>
+                  <input v-model="editForm.holder" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.filters.location') }}</label>
+                  <input v-model="editForm.location" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.purchaseSource') }}</label>
+                  <input v-model="editForm.purchase_source" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.originalCost') }}</label>
+                  <input v-model.number="editForm.original_cost" type="number" min="0" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.warranty') }}</label>
+                  <input v-model.number="editForm.warranty_months" type="number" min="0" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.notes') }}</label>
+                <textarea v-model="editForm.notes" rows="2" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+              </div>
+
+              <p v-if="editError" class="text-red-600 text-xs">{{ $t(editError) }}</p>
+
+              <div class="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  :disabled="!editForm.name || saving"
+                  class="bg-brand hover:opacity-90 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded transition-opacity"
+                >
+                  {{ saving ? $t('common.saving') : $t('common.save') }}
+                </button>
+                <button
+                  type="button"
+                  @click="cancelEdit"
+                  class="border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                >
+                  {{ $t('common.cancel') }}
+                </button>
+              </div>
+            </form>
+
+            <dl v-else class="space-y-3 text-sm">
               <div class="grid grid-cols-2 gap-2">
                 <dt class="text-gray-500">{{ $t('assets.columns.category') }}</dt>
                 <dd>{{ asset.category || '—' }}</dd>
@@ -129,7 +228,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
@@ -137,12 +236,19 @@ import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 import { openBlobInNewTab } from '@/utils/download'
 
+const ASSET_STATUSES = ['dang_su_dung', 'dang_sua_chua', 'cho_thanh_ly', 'da_thanh_ly', 'da_dieu_dong']
+
 const route = useRoute()
 const store = useAssetsStore()
 const auth = useAuthStore()
 
 const noteText = ref('')
 const asset = computed(() => store.currentAsset)
+
+const editing = ref(false)
+const saving = ref(false)
+const editError = ref('')
+const editForm = reactive({})
 
 function load() {
   store.fetchAsset(route.params.id)
@@ -172,5 +278,44 @@ async function onFilePick(e) {
 async function printDossier() {
   const { data } = await api.get(`/api/assets/${route.params.id}/pdf`, { responseType: 'blob' })
   openBlobInNewTab(data)
+}
+
+function startEdit() {
+  Object.assign(editForm, {
+    name: asset.value.name,
+    asset_code: asset.value.asset_code,
+    category: asset.value.category,
+    spec: asset.value.spec,
+    serial_number: asset.value.serial_number,
+    manufacturer: asset.value.manufacturer,
+    department: asset.value.department,
+    holder: asset.value.holder,
+    location: asset.value.location,
+    status: asset.value.status,
+    original_cost: asset.value.original_cost,
+    warranty_months: asset.value.warranty_months,
+    purchase_source: asset.value.purchase_source,
+    notes: asset.value.notes,
+  })
+  editError.value = ''
+  editing.value = true
+}
+
+function cancelEdit() {
+  editing.value = false
+}
+
+async function saveEdit() {
+  if (!editForm.name) return
+  saving.value = true
+  editError.value = ''
+  try {
+    await store.updateAsset(route.params.id, { ...editForm })
+    editing.value = false
+  } catch (e) {
+    editError.value = e.response?.data?.detail ?? 'common.genericError'
+  } finally {
+    saving.value = false
+  }
 }
 </script>
