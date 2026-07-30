@@ -4,117 +4,9 @@
     <div class="px-4 sm:px-8 py-10 max-w-3xl mx-auto w-full">
       <h1 class="text-2xl font-bold tracking-tight mb-8">{{ $t(`requests.form.${type}Title`) }}</h1>
 
-      <form @submit.prevent="submit" class="space-y-4 bg-white text-gray-900 rounded p-6">
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-            {{ $t('requests.fields.requesterDepartment') }}
-          </label>
-          <input
-            v-model="form.requester_department"
-            :placeholder="$t('requests.fields.requesterDepartmentPlaceholder')"
-            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          />
-        </div>
-
-        <div v-if="scopeOptions.length">
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-            {{ $t('requests.fields.scope') }}
-          </label>
-          <select
-            v-model="form.scope"
-            required
-            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          >
-            <option v-for="s in scopeOptions" :key="s" :value="s">{{ $t(`requests.scope.${s}`) }}</option>
-          </select>
-        </div>
-
-        <template v-if="type === 'transfer'">
-          <div v-if="form.scope === 'individual'">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              {{ $t('requests.fields.toHolder') }}
-            </label>
-            <input
-              v-model="toHolderEmail"
-              type="email"
-              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div v-else class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                {{ $t('requests.fields.toContactName') }}
-              </label>
-              <input v-model="form.to_contact_name" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                {{ $t('requests.fields.toContactTitle') }}
-              </label>
-              <input v-model="form.to_contact_title" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                {{ $t('requests.fields.toContactPhone') }}
-              </label>
-              <input v-model="form.to_contact_phone" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                {{ $t('requests.fields.toContactIdCard') }}
-              </label>
-              <input v-model="form.to_contact_id_card" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                {{ $t('requests.fields.toDepartment') }}
-              </label>
-              <input v-model="form.to_department" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                {{ $t('requests.fields.toLocation') }}
-              </label>
-              <input v-model="form.to_location" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            </div>
-          </div>
-        </template>
-
-        <template v-if="type === 'acquire'">
-          <div v-if="form.scope !== 'individual'">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              {{ $t('requests.fields.toDepartment') }}
-            </label>
-            <input v-model="form.to_department" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              {{ $t('requests.fields.justification') }}
-            </label>
-            <textarea
-              v-model="form.justification"
-              rows="2"
-              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-        </template>
-
-        <div v-if="type === 'liquidate'">
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-            {{ $t('requests.fields.reason') }}
-          </label>
-          <textarea
-            v-model="form.reason"
-            rows="2"
-            required
-            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-          />
-        </div>
-
+      <form @submit.prevent="submit" class="flex flex-col gap-4 bg-white text-gray-900 rounded p-6">
         <!-- Item rows -->
-        <div>
+        <div :class="itemsFirst ? 'order-1' : 'order-3'">
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
               {{ $t('requests.fields.items') }}
@@ -185,12 +77,198 @@
           </div>
         </div>
 
-        <p v-if="error" class="text-red-600 text-xs">{{ $t(error) }}</p>
+        <!-- Requester identity -->
+        <div :class="itemsFirst ? 'order-2' : 'order-1'" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              {{ $t('requests.fields.requesterDepartment') }}
+            </label>
+            <select
+              v-model="form.requester_department"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option value="">{{ $t('requests.fields.chooseDepartment') }}</option>
+              <option v-for="d in requesterDeptOptions" :key="d.dept_code" :value="d.dept_name">{{ d.dept_name }}</option>
+            </select>
+          </div>
+
+          <div v-if="scopeOptions.length">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              {{ $t('requests.fields.scope') }}
+            </label>
+            <select
+              v-model="form.scope"
+              required
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option v-for="s in scopeOptions" :key="s" :value="s">{{ $t(`requests.scope.${s}`) }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Type-specific fields -->
+        <div :class="itemsFirst ? 'order-3' : 'order-2'">
+          <template v-if="type === 'transfer'">
+            <div v-if="form.scope === 'individual'">
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                {{ $t('requests.fields.toHolder') }}
+              </label>
+
+              <div v-if="selectedRecipient" class="flex items-center justify-between gap-3 border border-gray-300 rounded px-3 py-2 text-sm">
+                <div class="min-w-0">
+                  <p class="font-medium truncate">{{ selectedRecipient.name }}</p>
+                  <p class="text-xs text-gray-500 truncate">
+                    {{ selectedRecipient.email }} · {{ selectedRecipient.job_title }} · {{ selectedRecipient.dept_name }}
+                  </p>
+                </div>
+                <button type="button" @click="clearRecipient" class="text-xs font-semibold text-primary hover:underline flex-shrink-0">
+                  {{ $t('requests.fields.recipientChange') }}
+                </button>
+              </div>
+              <div v-else class="relative" ref="recipientBoxRef">
+                <input
+                  v-model="recipientQuery"
+                  @focus="recipientDropdownOpen = true"
+                  :placeholder="$t('requests.fields.recipientSearchPlaceholder')"
+                  :disabled="loadingDirectory"
+                  class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                />
+                <p v-if="loadingDirectory" class="text-xs text-gray-400 mt-1">{{ $t('admin.users.loadingDirectory') }}</p>
+
+                <div
+                  v-if="recipientDropdownOpen && recipientQuery.trim() && filteredRecipients.length"
+                  class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg max-h-80 overflow-y-auto"
+                >
+                  <button
+                    v-for="r in filteredRecipients"
+                    :key="r.emp_code"
+                    type="button"
+                    @click="selectRecipient(r)"
+                    class="w-full flex items-center justify-between gap-3 p-3 text-sm text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                  >
+                    <div class="min-w-0">
+                      <p class="font-medium truncate">{{ r.name }}</p>
+                      <p class="text-xs text-gray-500 truncate">{{ r.email }} · {{ r.job_title }} · {{ r.dept_name }}</p>
+                    </div>
+                  </button>
+                </div>
+                <p
+                  v-else-if="recipientDropdownOpen && recipientQuery.trim() && !filteredRecipients.length && !loadingDirectory"
+                  class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg p-3 text-sm text-gray-400"
+                >
+                  {{ $t('common.noResults') }}
+                </p>
+              </div>
+            </div>
+            <div v-else class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.toContactName') }}
+                </label>
+                <input v-model="form.to_contact_name" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.toContactTitle') }}
+                </label>
+                <input v-model="form.to_contact_title" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.toContactPhone') }}
+                </label>
+                <input v-model="form.to_contact_phone" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.toContactIdCard') }}
+                </label>
+                <input v-model="form.to_contact_id_card" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-4">
+              <template v-if="form.scope !== 'individual'">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                    {{ $t('requests.fields.company') }}
+                  </label>
+                  <select v-model="toCompanyCode" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                    <option value="">{{ $t('requests.fields.chooseCompany') }}</option>
+                    <option v-for="c in companiesStore.companies" :key="c.id" :value="c.code">{{ c.code }} — {{ c.name }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                    {{ $t('requests.fields.toDepartment') }}
+                  </label>
+                  <select v-model="form.to_department" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                    <option value="">{{ $t('requests.fields.chooseDepartment') }}</option>
+                    <option v-for="d in toDeptOptions" :key="d.dept_code" :value="d.dept_name">{{ d.dept_name }}</option>
+                  </select>
+                </div>
+              </template>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.toLocation') }}
+                </label>
+                <input v-model="form.to_location" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+          </template>
+
+          <template v-if="type === 'acquire'">
+            <div v-if="form.scope !== 'individual'" class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.company') }}
+                </label>
+                <select v-model="toCompanyCode" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                  <option value="">{{ $t('requests.fields.chooseCompany') }}</option>
+                  <option v-for="c in companiesStore.companies" :key="c.id" :value="c.code">{{ c.code }} — {{ c.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.toDepartment') }}
+                </label>
+                <select v-model="form.to_department" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                  <option value="">{{ $t('requests.fields.chooseDepartment') }}</option>
+                  <option v-for="d in toDeptOptions" :key="d.dept_code" :value="d.dept_name">{{ d.dept_name }}</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                {{ $t('requests.fields.justification') }}
+              </label>
+              <textarea
+                v-model="form.justification"
+                rows="2"
+                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+          </template>
+
+          <div v-if="type === 'liquidate'">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              {{ $t('requests.fields.reason') }}
+            </label>
+            <textarea
+              v-model="form.reason"
+              rows="2"
+              required
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <p v-if="error" class="text-red-600 text-xs order-4">{{ $t(error) }}</p>
 
         <button
           type="submit"
           :disabled="!canSubmit"
-          class="w-full bg-brand hover:opacity-90 disabled:opacity-50 text-white font-semibold py-2.5 text-sm rounded transition-opacity"
+          class="w-full bg-brand hover:opacity-90 disabled:opacity-50 text-white font-semibold py-2.5 text-sm rounded transition-opacity order-4"
         >
           {{ submitting ? $t('requests.form.submitting') : $t('requests.form.submit') }}
         </button>
@@ -200,20 +278,25 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
+import { useAuthStore } from '@/stores/auth'
+import { useCompaniesStore } from '@/stores/companies'
 import { useRequestsStore } from '@/stores/requests'
+import { useUsersStore } from '@/stores/users'
 import api from '@/utils/api'
 
 const route = useRoute()
 const router = useRouter()
 const assetsStore = useAssetsStore()
 const requestsStore = useRequestsStore()
+const companiesStore = useCompaniesStore()
+const usersStore = useUsersStore()
+const auth = useAuthStore()
 
 const type = computed(() => route.params.type)
-const toHolderEmail = ref('')
 const submitting = ref(false)
 const error = ref('')
 
@@ -222,6 +305,9 @@ const SCOPE_OPTIONS_BY_TYPE = {
   acquire: ['individual', 'department', 'branch', 'project'],
 }
 const scopeOptions = computed(() => SCOPE_OPTIONS_BY_TYPE[type.value] || [])
+// Moving/liquidating an existing asset starts with picking that asset;
+// acquiring describes a not-yet-existing device, so its items come last.
+const itemsFirst = computed(() => type.value === 'transfer' || type.value === 'liquidate')
 
 function blankForm() {
   return {
@@ -258,14 +344,107 @@ function blankItem() {
 const form = reactive(blankForm())
 const items = ref([blankItem()])
 
+// --- HRIS directory: powers the recipient search and the department/company
+// dropdowns below. Fetched once and filtered client-side, same pattern as
+// the admin Users page.
+const hrisDirectory = ref([])
+const loadingDirectory = ref(false)
+
+const departmentOptions = computed(() => {
+  const seen = new Map()
+  for (const e of hrisDirectory.value) {
+    if (!e.dept_code || !e.dept_name || seen.has(e.dept_code)) continue
+    seen.set(e.dept_code, { dept_code: e.dept_code, dept_name: e.dept_name, company_code: e.suggested_company_code })
+  }
+  return [...seen.values()].sort((a, b) => a.dept_name.localeCompare(b.dept_name))
+})
+
+const ownCompanyCode = computed(() => {
+  const c = companiesStore.companies.find((c) => c.id === auth.user?.company_id)
+  return c?.code || null
+})
+
+const requesterDeptOptions = computed(() =>
+  departmentOptions.value.filter((d) => !ownCompanyCode.value || d.company_code === ownCompanyCode.value)
+)
+
+const toCompanyCode = ref('')
+const toDeptOptions = computed(() =>
+  toCompanyCode.value ? departmentOptions.value.filter((d) => d.company_code === toCompanyCode.value) : []
+)
+watch(toCompanyCode, () => {
+  form.to_department = ''
+})
+
+// --- Recipient search (transfer, scope=individual) ---
+const recipientQuery = ref('')
+const recipientDropdownOpen = ref(false)
+const recipientBoxRef = ref(null)
+const selectedRecipient = ref(null)
+
+const filteredRecipients = computed(() => {
+  const q = recipientQuery.value.trim().toLowerCase()
+  if (!q) return []
+  return hrisDirectory.value
+    .filter(
+      (e) =>
+        (e.name || '').toLowerCase().includes(q) ||
+        (e.email || '').toLowerCase().includes(q) ||
+        (e.emp_code || '').toLowerCase().includes(q)
+    )
+    .slice(0, 20)
+})
+
+function selectRecipient(emp) {
+  selectedRecipient.value = emp
+  recipientQuery.value = ''
+  recipientDropdownOpen.value = false
+}
+
+function clearRecipient() {
+  selectedRecipient.value = null
+  recipientQuery.value = ''
+}
+
+function handleOutsideClick(e) {
+  if (recipientBoxRef.value && !recipientBoxRef.value.contains(e.target)) {
+    recipientDropdownOpen.value = false
+  }
+}
+
 watch(type, () => {
   Object.assign(form, blankForm())
   items.value = [blankItem()]
+  toCompanyCode.value = ''
+  clearRecipient()
 })
 
-onMounted(() => {
+watch(
+  () => form.scope,
+  () => {
+    toCompanyCode.value = ''
+    form.to_department = ''
+    clearRecipient()
+  }
+)
+
+onMounted(async () => {
   if (!assetsStore.assets.length) assetsStore.fetchAssets()
+  if (!companiesStore.companies.length) companiesStore.fetchAll()
+  document.addEventListener('click', handleOutsideClick, true)
+
+  loadingDirectory.value = true
+  try {
+    hrisDirectory.value = await usersStore.searchHris()
+  } catch {
+    // HRIS temporarily unreachable — dropdowns just come back empty; none
+    // of these fields are required server-side, so the form still submits.
+  } finally {
+    loadingDirectory.value = false
+  }
 })
+
+onBeforeUnmount(() => document.removeEventListener('click', handleOutsideClick, true))
 
 function addItem() {
   items.value.push(blankItem())
@@ -279,6 +458,8 @@ const canSubmit = computed(() => {
   if (submitting.value) return false
   if (type.value === 'acquire') return items.value.every((i) => i.name)
   if (type.value === 'liquidate') return !!form.reason && items.value.every((i) => i.asset_id)
+  // transfer
+  if (form.scope === 'individual' && !selectedRecipient.value && !recipientQuery.value.includes('@')) return false
   return items.value.every((i) => i.asset_id)
 })
 
@@ -295,13 +476,32 @@ async function submit() {
     if (type.value === 'transfer' || type.value === 'acquire') {
       payload.scope = form.scope
     }
+
     if (type.value === 'transfer') {
-      payload.to_department = form.to_department || null
       payload.to_location = form.to_location || null
-      if (form.scope === 'individual' && toHolderEmail.value) {
-        const { data } = await api.get('/api/users/lookup', { params: { email: toHolderEmail.value } })
-        payload.to_holder_user_id = data.id
+
+      if (form.scope === 'individual') {
+        const email = selectedRecipient.value?.email || recipientQuery.value.trim()
+        let localUser = null
+        try {
+          const { data } = await api.get('/api/users/lookup', { params: { email } })
+          localUser = data
+        } catch {
+          localUser = null
+        }
+        if (localUser) {
+          payload.to_holder_user_id = localUser.id
+        } else if (selectedRecipient.value) {
+          payload.to_contact_name = selectedRecipient.value.name || null
+          payload.to_contact_title = selectedRecipient.value.job_title || null
+          payload.to_contact_phone = selectedRecipient.value.phone || null
+          payload.to_contact_email = selectedRecipient.value.email || null
+        } else {
+          payload.to_contact_email = email || null
+        }
+        payload.to_department = selectedRecipient.value?.dept_name || null
       } else {
+        payload.to_department = form.to_department || null
         payload.to_contact_name = form.to_contact_name || null
         payload.to_contact_title = form.to_contact_title || null
         payload.to_contact_phone = form.to_contact_phone || null

@@ -38,10 +38,12 @@ async def lookup_user(
 @router.get("/hris-search", response_model=list[HrisEmployeeOut])
 async def hris_search(
     q: str | None = Query(None),
-    _: User = Depends(require_admin),
+    _: User = Depends(get_current_user),
 ):
     """Proxies the HRIS employee directory so the API key never reaches the
-    frontend, and the admin add-user form gets its "search HRIS" step."""
+    frontend. Used by the admin add-user form's "search HRIS" step, and by
+    the request form's recipient/department pickers — any signed-in user
+    may look up the internal directory, same as the admin view."""
     try:
         employees = await search_employees(q)
     except RuntimeError as e:

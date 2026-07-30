@@ -154,7 +154,12 @@
     "fields": {
       "asset": "Asset",
       "scope": "Scope",
-      "toHolder": "Recipient (email)",
+      "toHolder": "Recipient",
+      "recipientSearchPlaceholder": "Search by name or email...",
+      "recipientChange": "Change",
+      "company": "Company",
+      "chooseCompany": "— Choose a company —",
+      "chooseDepartment": "— Choose a department —",
       "toContactName": "Recipient name",
       "toContactTitle": "Recipient title",
       "toContactPhone": "Recipient phone",
@@ -217,7 +222,9 @@
       "roleApprover": "Approver",
       "approvedSalePrice": "Approved sale price (VND)",
       "viewAsset": "View asset",
-      "council": "Liquidation council"
+      "council": "Liquidation council",
+      "delete": "Delete",
+      "confirmDelete": "Delete this request? This cannot be undone."
     },
     "list": {
       "mine": "My requests",

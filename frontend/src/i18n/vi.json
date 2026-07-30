@@ -154,7 +154,12 @@
     "fields": {
       "asset": "Tài sản",
       "scope": "Phạm vi",
-      "toHolder": "Người nhận (email)",
+      "toHolder": "Người nhận",
+      "recipientSearchPlaceholder": "Tìm theo tên hoặc email...",
+      "recipientChange": "Đổi",
+      "company": "Công ty",
+      "chooseCompany": "— Chọn công ty —",
+      "chooseDepartment": "— Chọn phòng ban —",
       "toContactName": "Tên người nhận",
       "toContactTitle": "Chức danh người nhận",
       "toContactPhone": "Số điện thoại người nhận",
@@ -217,7 +222,9 @@
       "roleApprover": "Người phê duyệt",
       "approvedSalePrice": "Giá bán duyệt (VNĐ)",
       "viewAsset": "Xem tài sản",
-      "council": "Hội đồng thanh lý"
+      "council": "Hội đồng thanh lý",
+      "delete": "Xóa",
+      "confirmDelete": "Xóa yêu cầu này? Hành động này không thể hoàn tác."
     },
     "list": {
       "mine": "Yêu cầu của tôi",

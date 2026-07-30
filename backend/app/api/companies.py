@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_admin
+from app.api.deps import get_current_user, require_admin
 from app.core.database import get_db
 from app.models.company import Company
 from app.models.user import User
@@ -37,7 +37,9 @@ async def _recompute_subtree_paths(db: AsyncSession, company: Company) -> None:
 @router.get("", response_model=list[CompanyOut])
 async def list_companies(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
+    # Read-only company directory (code/name/hierarchy) — any signed-in user
+    # needs this to populate the request form's company/department pickers.
+    _: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Company).order_by(Company.code))
     return result.scalars().all()

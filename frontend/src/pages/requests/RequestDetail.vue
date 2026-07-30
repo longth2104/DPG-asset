@@ -13,9 +13,19 @@
             </p>
             <h1 class="text-2xl font-bold tracking-tight">{{ $t('requests.detail.title') }}</h1>
           </div>
-          <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary">
-            {{ $t(`requests.status.${request.status}`) }}
-          </span>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary">
+              {{ $t(`requests.status.${request.status}`) }}
+            </span>
+            <button
+              v-if="auth.isAdmin"
+              @click="remove"
+              :disabled="deleting"
+              class="text-xs font-semibold px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white transition-colors"
+            >
+              {{ $t('requests.detail.delete') }}
+            </button>
+          </div>
         </div>
 
         <div class="bg-white text-gray-900 rounded p-6 mb-6">
@@ -217,7 +227,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import SignaturePad from '@/components/SignaturePad.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -225,6 +235,7 @@ import { useRequestsStore } from '@/stores/requests'
 import { openBlobInNewTab } from '@/utils/download'
 
 const route = useRoute()
+const router = useRouter()
 const store = useRequestsStore()
 const auth = useAuthStore()
 const { t } = useI18n()
@@ -232,6 +243,7 @@ const { t } = useI18n()
 const request = computed(() => store.currentRequest)
 const decisionNote = ref('')
 const deciding = ref(false)
+const deleting = ref(false)
 const signedName = ref(auth.user?.full_name || '')
 const uploadedFile = ref(null)
 const padRef = ref(null)
@@ -312,5 +324,16 @@ async function submitSignature() {
 async function downloadPdf() {
   const blob = await store.fetchPdfBlob(route.params.id)
   openBlobInNewTab(blob)
+}
+
+async function remove() {
+  if (!confirm(t('requests.detail.confirmDelete'))) return
+  deleting.value = true
+  try {
+    await store.deleteMany([route.params.id])
+    router.push('/')
+  } finally {
+    deleting.value = false
+  }
 }
 </script>

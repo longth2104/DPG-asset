@@ -32,5 +32,6 @@ class UserOut(BaseModel):
     full_name: str | None = None
     role: str
     is_active: bool
+    company_id: uuid.UUID | None = None
 
     model_config = {"from_attributes": True}
