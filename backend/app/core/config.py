@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     RDS_CATEGORIES_PATH: str = "/api/v1/categories/tscd"
     RDS_API_KEY: str = ""
 
+    # Inbound key for the e-office (datphuong.vn) integration — the reverse
+    # direction from HRIS/RDS above: e-office calls *into* AMS, authenticating
+    # with this key as "Authorization: Bearer <key>". Empty disables the
+    # integration (all /api/eoffice/* calls 503).
+    EOFFICE_API_KEY: str = ""
+
     model_config = {"env_file": ".env"}
 
 

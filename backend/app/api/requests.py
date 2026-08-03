@@ -341,7 +341,7 @@ async def list_requests(
 
     return [
         RequestListItem(
-            id=r.id, type=r.type, status=r.status, requester_id=r.requester_id,
+            id=r.id, type=r.type, status=r.status, origin=r.origin, requester_id=r.requester_id,
             requester_name=names.get(r.requester_id), approver_role=r.approver_role,
             created_at=r.created_at,
         )

@@ -14,6 +14,12 @@
             <h1 class="text-2xl font-bold tracking-tight">{{ $t('requests.detail.title') }}</h1>
           </div>
           <div class="flex items-center gap-3">
+            <span
+              v-if="request.origin === 'eoffice'"
+              class="text-xs font-semibold px-3 py-1 rounded-full bg-white/20 text-white"
+            >
+              {{ $t('requests.detail.viaEoffice') }}
+            </span>
             <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary">
               {{ $t(`requests.status.${request.status}`) }}
             </span>

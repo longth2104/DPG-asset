@@ -224,7 +224,8 @@
       "viewAsset": "View asset",
       "council": "Liquidation council",
       "delete": "Delete",
-      "confirmDelete": "Delete this request? This cannot be undone."
+      "confirmDelete": "Delete this request? This cannot be undone.",
+      "viaEoffice": "via e-office"
     },
     "list": {
       "mine": "My requests",

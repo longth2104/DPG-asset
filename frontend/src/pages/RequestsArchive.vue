@@ -64,7 +64,12 @@
               <td class="px-4 py-3" @click.stop>
                 <input type="checkbox" :checked="selectedIds.has(r.id)" @change="toggleOne(r.id)" />
               </td>
-              <td class="px-4 py-3 font-medium text-primary">{{ $t(`requests.type.${r.type}`) }}</td>
+              <td class="px-4 py-3 font-medium text-primary">
+                {{ $t(`requests.type.${r.type}`) }}
+                <span v-if="r.origin === 'eoffice'" class="ml-1 text-xs font-semibold text-gray-400">
+                  ({{ $t('requests.detail.viaEoffice') }})
+                </span>
+              </td>
               <td class="px-4 py-3">{{ r.requester_name || '—' }}</td>
               <td class="px-4 py-3">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">

@@ -24,12 +24,21 @@ COLUMNS = [
     ("status", "Tình trạng"),
     ("purchase_source", "Nơi mua"),
     ("notes", "Ghi chú"),
+    # Appended rather than inserted alongside "holder" — keeps every existing
+    # column's position stable so already-exported .xlsx files still import.
+    # Not an Asset column: resolved to/from holder_user_id at the API layer
+    # (see assets.py import/export), not passed straight through like the
+    # other fields here.
+    ("holder_email", "Email người sử dụng"),
 ]
 
 _STATUS_LABEL_TO_CODE = {label.lower(): code for code, label in ASSET_STATUS_LABELS.items()}
 
 
-def build_asset_xlsx(assets) -> bytes:
+def build_asset_xlsx(assets, holder_emails: dict | None = None) -> bytes:
+    """`holder_emails` maps Asset.holder_user_id -> email, resolved by the
+    caller (assets.py) since `holder_email` isn't a real Asset column."""
+    holder_emails = holder_emails or {}
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Danh sách tài sản"
@@ -39,11 +48,14 @@ def build_asset_xlsx(assets) -> bytes:
 
     for row_idx, asset in enumerate(assets, start=2):
         for col_idx, (field, _) in enumerate(COLUMNS, start=1):
-            value = getattr(asset, field)
-            if field == "status":
-                value = ASSET_STATUS_LABELS.get(value, value)
-            elif field == "original_cost" and value is not None:
-                value = float(value)
+            if field == "holder_email":
+                value = holder_emails.get(asset.holder_user_id)
+            else:
+                value = getattr(asset, field)
+                if field == "status":
+                    value = ASSET_STATUS_LABELS.get(value, value)
+                elif field == "original_cost" and value is not None:
+                    value = float(value)
             ws.cell(row=row_idx, column=col_idx, value=value)
 
     for col_idx in range(1, len(COLUMNS) + 1):

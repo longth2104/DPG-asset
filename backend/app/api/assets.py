@@ -37,6 +37,7 @@ from app.schemas.document import DocumentOut
 from app.services.excel import build_asset_xlsx, parse_asset_xlsx
 from app.services.pdf import render_asset_dossier_pdf, render_asset_export_pdf
 from app.services.rds import fetch_all_assets
+from app.services.user_provisioning import find_or_create_user_by_email
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -152,7 +153,12 @@ async def export_assets(
     assets = (await db.execute(stmt)).scalars().all()
 
     if body.format == "xlsx":
-        content = build_asset_xlsx(assets)
+        holder_ids = {a.holder_user_id for a in assets if a.holder_user_id}
+        holder_emails = {}
+        if holder_ids:
+            result = await db.execute(select(User.id, User.email).where(User.id.in_(holder_ids)))
+            holder_emails = dict(result.all())
+        content = build_asset_xlsx(assets, holder_emails)
         media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         filename = "danh-sach-tai-san.xlsx"
     else:
@@ -209,10 +215,20 @@ async def import_assets(
             row["asset_code"] = code
         seen_codes.add(code)
 
+        # Not a real Asset column — resolved to holder_user_id (reliable
+        # exact match) rather than the free-text `holder` name column (kept
+        # deliberately unmatched, per the comment on Asset.holder_user_id:
+        # Vietnamese name-matching is too unreliable).
+        holder_email = row.pop("holder_email", None)
+        holder_user_id = None
+        if holder_email:
+            holder = await find_or_create_user_by_email(db, holder_email)
+            holder_user_id = holder.id if holder else None
+
         # New assets belong to the importer's own company — not exposed as
         # an importable column, so it can't be used to plant assets into a
         # different company than the one you're scoped to.
-        asset = Asset(**row, created_by=user.id, company_id=user.company_id)
+        asset = Asset(**row, holder_user_id=holder_user_id, created_by=user.id, company_id=user.company_id)
         db.add(asset)
         await db.flush()
         await _log_event(db, asset.id, user.id, "created", f"Nhập từ file Excel: {file.filename}")

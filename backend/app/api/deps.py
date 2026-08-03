@@ -1,7 +1,8 @@
+import secrets
 import uuid
 
 import redis.asyncio as aioredis
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -93,6 +94,17 @@ async def get_scope_company_path(
     if not company or company.grants_global_access:
         return None
     return company.path
+
+
+async def require_eoffice_key(authorization: str | None = Header(None)) -> None:
+    """Gates /api/eoffice/* — the reverse direction from HRIS/RDS: e-office
+    calls into AMS, authenticating with a static shared key rather than a
+    user session. Constant-time compare since this is a bearer secret."""
+    if not settings.EOFFICE_API_KEY:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "E-office integration not configured")
+    expected = f"Bearer {settings.EOFFICE_API_KEY}"
+    if not authorization or not secrets.compare_digest(authorization, expected):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
 
 
 def require_role(*roles: str):

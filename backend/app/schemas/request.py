@@ -120,6 +120,7 @@ class RequestListItem(BaseModel):
     id: uuid.UUID
     type: str
     status: str
+    origin: str = "ams"
     requester_id: uuid.UUID
     requester_name: str | None = None
     approver_role: str

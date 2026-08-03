@@ -224,7 +224,8 @@
       "viewAsset": "Xem tài sản",
       "council": "Hội đồng thanh lý",
       "delete": "Xóa",
-      "confirmDelete": "Xóa yêu cầu này? Hành động này không thể hoàn tác."
+      "confirmDelete": "Xóa yêu cầu này? Hành động này không thể hoàn tác.",
+      "viaEoffice": "qua e-office"
     },
     "list": {
       "mine": "Yêu cầu của tôi",

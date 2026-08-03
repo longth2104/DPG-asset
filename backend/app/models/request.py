@@ -31,6 +31,14 @@ class Request(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type: Mapped[str] = mapped_column(String, nullable=False, index=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending", index=True)
+    # "ams" (created via this app's own UI) or "eoffice" (reported in already
+    # decided, via the /api/eoffice integration) — purely informational,
+    # shown as a badge on the request detail/archive views.
+    origin: Mapped[str] = mapped_column(String, nullable=False, default="ams", server_default="ams")
+    # e-office's own record id for the action this request represents — lets
+    # a retried /api/eoffice call return the existing request instead of
+    # creating a duplicate. Null for requests created in AMS itself.
+    external_ref: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
 
     requester_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
