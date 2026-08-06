@@ -71,8 +71,8 @@
                 </span>
               </td>
               <td class="px-4 py-3">{{ r.requester_name || '—' }}</td>
-              <td class="px-4 py-3">
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap">
                   {{ $t(`requests.status.${r.status}`) }}
                 </span>
               </td>

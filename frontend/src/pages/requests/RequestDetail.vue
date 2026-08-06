@@ -16,18 +16,18 @@
           <div class="flex items-center gap-3">
             <span
               v-if="request.origin === 'eoffice'"
-              class="text-xs font-semibold px-3 py-1 rounded-full bg-white/20 text-white"
+              class="text-xs font-semibold px-3 py-1 rounded-full bg-white/20 text-white whitespace-nowrap"
             >
               {{ $t('requests.detail.viaEoffice') }}
             </span>
-            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary">
+            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary whitespace-nowrap">
               {{ $t(`requests.status.${request.status}`) }}
             </span>
             <button
               v-if="auth.isAdmin"
               @click="remove"
               :disabled="deleting"
-              class="text-xs font-semibold px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white transition-colors"
+              class="text-xs font-semibold px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white transition-colors whitespace-nowrap"
             >
               {{ $t('requests.detail.delete') }}
             </button>

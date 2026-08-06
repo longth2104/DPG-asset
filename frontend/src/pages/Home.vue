@@ -78,7 +78,7 @@
               class="flex items-center justify-between gap-3 p-3 text-sm hover:bg-gray-50"
             >
               <span class="font-medium">{{ $t(`requests.type.${r.type}`) }}</span>
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap flex-shrink-0">
                 {{ $t(`requests.status.${r.status}`) }}
               </span>
             </router-link>
@@ -98,7 +98,7 @@
               class="flex items-center justify-between gap-3 p-3 text-sm hover:bg-gray-50"
             >
               <span class="font-medium">{{ $t(`requests.type.${r.type}`) }}</span>
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap flex-shrink-0">
                 {{ $t(`requests.status.${r.status}`) }}
               </span>
             </router-link>

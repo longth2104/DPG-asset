@@ -184,8 +184,8 @@
               <td class="px-4 py-3">{{ a.category }}</td>
               <td class="px-4 py-3">{{ a.department }}</td>
               <td class="px-4 py-3">{{ a.holder }}</td>
-              <td class="px-4 py-3">
-                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap">
                   {{ $t(`assets.status.${a.status}`) }}
                 </span>
               </td>

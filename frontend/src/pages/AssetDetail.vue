@@ -14,7 +14,7 @@
             <h1 class="text-2xl font-bold tracking-tight">{{ asset.name }}</h1>
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary">
+            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary whitespace-nowrap">
               {{ $t(`assets.status.${asset.status}`) }}
             </span>
             <button
