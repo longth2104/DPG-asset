@@ -20,6 +20,12 @@
             >
               {{ $t('requests.detail.viaEoffice') }}
             </span>
+            <span
+              v-else-if="request.origin === 'direct'"
+              class="text-xs font-semibold px-3 py-1 rounded-full bg-amber-400 text-gray-900 whitespace-nowrap"
+            >
+              {{ $t('requests.detail.viaDirect') }}
+            </span>
             <span class="text-xs font-semibold px-3 py-1 rounded-full bg-white text-primary whitespace-nowrap">
               {{ $t(`requests.status.${request.status}`) }}
             </span>

@@ -17,6 +17,28 @@
     "approved": "Your {type} request was approved",
     "rejected": "Your {type} request was rejected"
   },
+  "assetActions": {
+    "section": {
+      "title": "Admin direct actions",
+      "hint": "Perform immediately, no approval needed"
+    },
+    "quickLink": {
+      "transfer": "Transfer directly",
+      "liquidate": "Liquidate directly"
+    },
+    "fields": {
+      "actingDepartment": "Acting department"
+    },
+    "form": {
+      "transferTitle": "Direct transfer / receive",
+      "acquireTitle": "Direct asset acquisition",
+      "liquidateTitle": "Direct liquidation",
+      "hint": "Admin only — this applies immediately, with no approval step. The normal request/approval flow is unaffected.",
+      "warning": "This takes effect immediately and cannot be routed for approval afterward.",
+      "submit": "Perform",
+      "submitting": "Processing..."
+    }
+  },
   "auth": {
     "email": "Email",
     "password": "Password",
@@ -233,7 +255,8 @@
       "council": "Liquidation council",
       "delete": "Delete",
       "confirmDelete": "Delete this request? This cannot be undone.",
-      "viaEoffice": "via e-office"
+      "viaEoffice": "via e-office",
+      "viaDirect": "direct action"
     },
     "list": {
       "mine": "My requests",

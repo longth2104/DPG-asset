@@ -209,13 +209,15 @@ def _to_out(req: Request, items: list[RequestItem], signatures: list[RequestSign
     )
 
 
-@router.post("", response_model=RequestOut, status_code=status.HTTP_201_CREATED)
-async def create_request(
-    body: RequestCreate,
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-    company_path: str | None = Depends(get_scope_company_path),
-):
+async def _build_request(
+    db: AsyncSession, body: RequestCreate, actor: User, company_path: str | None
+) -> Request:
+    """Validates the body and constructs the Request/RequestItem rows
+    (council snapshot, per-item rows, asset "created" AssetEvent notes),
+    flushed but not committed. Shared by create_request (leaves it
+    "pending") and the admin direct-action endpoint in asset_actions.py
+    (immediately applies the effect and marks it "completed") — the caller
+    owns status/decision fields, notifications, and the commit."""
     if body.type not in REQUEST_TYPES:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown request type")
     if body.scope is not None and body.scope not in REQUEST_SCOPES:
@@ -255,7 +257,7 @@ async def create_request(
 
     req = Request(
         type=body.type,
-        requester_id=user.id,
+        requester_id=actor.id,
         requester_department=body.requester_department,
         scope=body.scope,
         to_holder_user_id=body.to_holder_user_id,
@@ -297,6 +299,7 @@ async def create_request(
                 remaining_value=item_in.remaining_value,
                 market_value=item_in.market_value,
                 proposed_value=item_in.proposed_value,
+                approved_sale_price=item_in.approved_sale_price,
                 condition_note=item_in.condition_note,
             )
         )
@@ -305,12 +308,24 @@ async def create_request(
         db.add(
             AssetEvent(
                 asset_id=asset.id,
-                actor_id=user.id,
+                actor_id=actor.id,
                 type="note",
                 note=f"Yêu cầu {body.type} được tạo (mã yêu cầu {req.id})",
             )
         )
 
+    await db.flush()
+    return req
+
+
+@router.post("", response_model=RequestOut, status_code=status.HTTP_201_CREATED)
+async def create_request(
+    body: RequestCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+    company_path: str | None = Depends(get_scope_company_path),
+):
+    req = await _build_request(db, body, user, company_path)
     await _notify_pending_approvers(db, req)
 
     await db.commit()

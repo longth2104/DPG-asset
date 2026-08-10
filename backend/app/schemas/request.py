@@ -35,6 +35,10 @@ class RequestItemCreate(BaseModel):
     remaining_value: float | None = None
     market_value: float | None = None
     proposed_value: float | None = None
+    # Only meaningful for the admin direct-action endpoint (asset_actions.py)
+    # liquidating an asset with no separate decide step — ignored (stays
+    # null) on the normal request flow, where this is set later at decide time.
+    approved_sale_price: float | None = None
     condition_note: str | None = None
 
 

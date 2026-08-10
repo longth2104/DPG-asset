@@ -30,6 +30,20 @@
             >
               {{ $t('assetDetail.printDossier') }}
             </button>
+            <router-link
+              v-if="auth.isAdmin"
+              :to="`/admin/asset-actions/transfer?assetId=${asset.id}`"
+              class="bg-amber-400 hover:bg-amber-300 text-gray-900 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+            >
+              {{ $t('assetActions.quickLink.transfer') }}
+            </router-link>
+            <router-link
+              v-if="auth.isAdmin"
+              :to="`/admin/asset-actions/liquidate?assetId=${asset.id}`"
+              class="bg-amber-400 hover:bg-amber-300 text-gray-900 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+            >
+              {{ $t('assetActions.quickLink.liquidate') }}
+            </router-link>
           </div>
         </div>
 

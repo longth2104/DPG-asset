@@ -17,6 +17,28 @@
     "approved": "Yêu cầu {type} của bạn đã được duyệt",
     "rejected": "Yêu cầu {type} của bạn đã bị từ chối"
   },
+  "assetActions": {
+    "section": {
+      "title": "Thao tác trực tiếp (Admin)",
+      "hint": "Thực hiện ngay, không cần phê duyệt"
+    },
+    "quickLink": {
+      "transfer": "Điều động trực tiếp",
+      "liquidate": "Thanh lý trực tiếp"
+    },
+    "fields": {
+      "actingDepartment": "Đơn vị thực hiện"
+    },
+    "form": {
+      "transferTitle": "Điều động / nhận tài sản trực tiếp",
+      "acquireTitle": "Mua sắm tài sản trực tiếp",
+      "liquidateTitle": "Thanh lý tài sản trực tiếp",
+      "hint": "Chỉ dành cho Admin — thao tác này có hiệu lực ngay, không qua bước phê duyệt. Trang gửi yêu cầu thông thường không bị ảnh hưởng.",
+      "warning": "Thao tác này có hiệu lực ngay lập tức và không thể chuyển qua phê duyệt sau đó.",
+      "submit": "Thực hiện",
+      "submitting": "Đang xử lý..."
+    }
+  },
   "auth": {
     "email": "Email",
     "password": "Mật khẩu",
@@ -233,7 +255,8 @@
       "council": "Hội đồng thanh lý",
       "delete": "Xóa",
       "confirmDelete": "Xóa yêu cầu này? Hành động này không thể hoàn tác.",
-      "viaEoffice": "qua e-office"
+      "viaEoffice": "qua e-office",
+      "viaDirect": "thực hiện trực tiếp"
     },
     "list": {
       "mine": "Yêu cầu của tôi",

@@ -69,6 +69,9 @@
                 <span v-if="r.origin === 'eoffice'" class="ml-1 text-xs font-semibold text-gray-400">
                   ({{ $t('requests.detail.viaEoffice') }})
                 </span>
+                <span v-else-if="r.origin === 'direct'" class="ml-1 text-xs font-semibold text-amber-600">
+                  ({{ $t('requests.detail.viaDirect') }})
+                </span>
               </td>
               <td class="px-4 py-3">{{ r.requester_name || '—' }}</td>
               <td class="px-4 py-3 whitespace-nowrap">

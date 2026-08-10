@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
+    asset_actions,
     assets,
     auth,
     companies,
@@ -34,6 +35,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(assets.router)
+app.include_router(asset_actions.router)
 app.include_router(requests.router)
 app.include_router(upload.router)
 app.include_router(settings.router)

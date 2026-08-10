@@ -34,6 +34,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/admin/asset-actions/:type',
+    name: 'asset-action-new',
+    component: () => import('@/pages/admin/AssetActionForm.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
     path: '/requests/archive',
     name: 'requests-archive',
     component: () => import('@/pages/RequestsArchive.vue'),

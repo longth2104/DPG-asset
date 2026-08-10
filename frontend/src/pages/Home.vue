@@ -23,6 +23,24 @@
         </div>
       </div>
 
+      <!-- Admin direct actions -->
+      <div v-if="auth.isAdmin" class="mb-8">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-white/70 mb-3">
+          {{ $t('assetActions.section.title') }}
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <router-link
+            v-for="type in ['transfer', 'acquire', 'liquidate']"
+            :key="type"
+            :to="`/admin/asset-actions/${type}`"
+            class="bg-amber-50 text-gray-900 border border-amber-200 rounded p-4 hover:shadow-lg transition-shadow"
+          >
+            <p class="font-semibold text-primary">{{ $t(`home.action.${type}`) }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('assetActions.section.hint') }}</p>
+          </router-link>
+        </div>
+      </div>
+
       <!-- My assets -->
       <div class="mb-8">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-white/70 mb-3">
