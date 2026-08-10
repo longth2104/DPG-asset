@@ -123,6 +123,65 @@
     <div class="flex-1 md:hidden" />
 
     <div class="flex items-center gap-2 sm:gap-3">
+      <div class="relative" ref="bellRef">
+        <button
+          @click="toggleNotifDropdown"
+          class="relative flex items-center justify-center w-8 h-8 rounded text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+          :aria-label="$t('notifications.title')"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span
+            v-if="notifications.hasUnread"
+            class="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-bold leading-none rounded-full bg-red-500 text-white"
+          >
+            {{ notifications.unreadCount > 9 ? '9+' : notifications.unreadCount }}
+          </span>
+        </button>
+
+        <Transition name="dropdown">
+          <div
+            v-if="notifOpen"
+            class="absolute top-full right-0 mt-1.5 w-80 max-w-[90vw] bg-white text-gray-900 border border-gray-300 rounded-lg shadow-2xl overflow-hidden"
+          >
+            <div class="px-4 py-2.5 bg-gray-100 border-b border-gray-200 flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-900">{{ $t('notifications.title') }}</span>
+              <button
+                v-if="notifications.hasUnread"
+                @click="notifications.markAllRead()"
+                class="text-xs font-semibold text-primary hover:underline"
+              >
+                {{ $t('notifications.markAllRead') }}
+              </button>
+            </div>
+            <div class="max-h-96 overflow-y-auto divide-y divide-gray-100">
+              <p v-if="!notifications.items.length" class="px-4 py-6 text-sm text-gray-500 text-center">
+                {{ $t('notifications.empty') }}
+              </p>
+              <button
+                v-for="n in notifications.items"
+                :key="n.id"
+                @click="openNotification(n)"
+                class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors flex items-start gap-2"
+                :class="{ 'bg-primary/5': !n.is_read }"
+              >
+                <span
+                  class="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  :class="n.is_read ? 'bg-transparent' : 'bg-primary'"
+                />
+                <span class="min-w-0">
+                  <span class="block text-gray-800">{{ notificationText(n) }}</span>
+                  <span class="block text-xs text-gray-400 mt-0.5">
+                    {{ new Date(n.created_at).toLocaleString() }}
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
       <button
         @click="toggleLang"
         class="flex items-center gap-1 text-xs font-semibold border border-white/25 hover:border-white/50 px-2.5 py-1 rounded transition-colors text-white/80 hover:text-white select-none"
@@ -171,15 +230,20 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { setLocale } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
 import UserAvatar from './UserAvatar.vue'
 
 const auth = useAuthStore()
+const notifications = useNotificationsStore()
 const router = useRouter()
 const { t, locale } = useI18n()
 
 const dropdownOpen = ref(false)
+const notifOpen = ref(false)
 const mobileOpen = ref(false)
 const logoRef = ref(null)
+const bellRef = ref(null)
+let pollInterval = null
 
 const navLinks = computed(() => [
   { to: '/', label: t('nav.home') },
@@ -200,10 +264,37 @@ function handleOutsideClick(e) {
   if (logoRef.value && !logoRef.value.contains(e.target)) {
     dropdownOpen.value = false
   }
+  if (bellRef.value && !bellRef.value.contains(e.target)) {
+    notifOpen.value = false
+  }
 }
 
-onMounted(() => document.addEventListener('click', handleOutsideClick, true))
-onBeforeUnmount(() => document.removeEventListener('click', handleOutsideClick, true))
+function notificationText(n) {
+  const type = t(`requests.type.${n.request_type}`)
+  if (n.type === 'pending_approval') return t('notifications.pendingApproval', { type })
+  return t(n.request_status === 'rejected' ? 'notifications.rejected' : 'notifications.approved', { type })
+}
+
+function toggleNotifDropdown() {
+  notifOpen.value = !notifOpen.value
+  if (notifOpen.value) notifications.fetchAll()
+}
+
+async function openNotification(n) {
+  notifOpen.value = false
+  if (!n.is_read) await notifications.markRead(n.id)
+  router.push(`/requests/${n.request_id}`)
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleOutsideClick, true)
+  notifications.fetchUnreadCount()
+  pollInterval = setInterval(() => notifications.fetchUnreadCount(), 30000)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleOutsideClick, true)
+  if (pollInterval) clearInterval(pollInterval)
+})
 </script>
 
 <style scoped>

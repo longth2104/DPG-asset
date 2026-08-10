@@ -9,6 +9,14 @@
     "adminCouncil": "Hội đồng thanh lý",
     "requestsArchive": "Kho lưu trữ yêu cầu"
   },
+  "notifications": {
+    "title": "Thông báo",
+    "empty": "Chưa có thông báo",
+    "markAllRead": "Đánh dấu đã đọc tất cả",
+    "pendingApproval": "Yêu cầu {type} đang chờ bạn duyệt",
+    "approved": "Yêu cầu {type} của bạn đã được duyệt",
+    "rejected": "Yêu cầu {type} của bạn đã bị từ chối"
+  },
   "auth": {
     "email": "Email",
     "password": "Mật khẩu",

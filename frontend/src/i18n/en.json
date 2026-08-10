@@ -9,6 +9,14 @@
     "adminCouncil": "Liquidation council",
     "requestsArchive": "Requests archive"
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all read",
+    "pendingApproval": "A {type} request is awaiting your approval",
+    "approved": "Your {type} request was approved",
+    "rejected": "Your {type} request was rejected"
+  },
   "auth": {
     "email": "Email",
     "password": "Password",

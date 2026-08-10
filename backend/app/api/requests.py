@@ -19,6 +19,7 @@ from app.models.asset import Asset
 from app.models.asset_event import AssetEvent
 from app.models.company import Company
 from app.models.council import CouncilMember
+from app.models.notification import Notification
 from app.models.request import (
     APPROVER_ROLE_BY_TYPE,
     REQUEST_SCOPES,
@@ -111,28 +112,52 @@ def _request_scope_condition(company_path: str | None):
     return or_(asset_linked_in_scope, requester_in_scope)
 
 
+async def _request_in_company_scope(db: AsyncSession, req: Request, company_path: str) -> bool:
+    """Whether `req` is visible to someone scoped to `company_path` — only
+    meaningful when the caller already knows they're scoped (never call
+    with company_path=None; that's the unrestricted case, always visible)."""
+    if req.type == "acquire":
+        requester = await db.get(User, req.requester_id)
+        if not requester or not requester.company_id:
+            return False
+        company = await db.get(Company, requester.company_id)
+        return bool(company and company.path.startswith(company_path))
+    items = await _items_for(db, req.id)
+    asset_ids = [i.asset_id for i in items if i.asset_id]
+    if not asset_ids:
+        return False
+    result = await db.execute(select(Asset).where(Asset.id.in_(asset_ids)))
+    company_ids = {a.company_id for a in result.scalars().all() if a.company_id}
+    if not company_ids:
+        return False
+    result2 = await db.execute(select(Company).where(Company.id.in_(company_ids)))
+    return any(c.path.startswith(company_path) for c in result2.scalars().all())
+
+
 async def _assert_request_visible(
     db: AsyncSession, req: Request, user: User, company_path: str | None
 ) -> None:
     if user.id == req.requester_id or company_path is None:
         return
-    in_scope = False
-    if req.type == "acquire":
-        requester = await db.get(User, req.requester_id)
-        if requester and requester.company_id:
-            company = await db.get(Company, requester.company_id)
-            in_scope = bool(company and company.path.startswith(company_path))
-    else:
-        items = await _items_for(db, req.id)
-        asset_ids = [i.asset_id for i in items if i.asset_id]
-        if asset_ids:
-            result = await db.execute(select(Asset).where(Asset.id.in_(asset_ids)))
-            company_ids = {a.company_id for a in result.scalars().all() if a.company_id}
-            if company_ids:
-                result2 = await db.execute(select(Company).where(Company.id.in_(company_ids)))
-                in_scope = any(c.path.startswith(company_path) for c in result2.scalars().all())
-    if not in_scope:
+    if not await _request_in_company_scope(db, req, company_path):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Request not found")
+
+
+async def _notify_pending_approvers(db: AsyncSession, req: Request) -> None:
+    """One notification per approver-role user who can actually see this
+    request — same company-scope rule as the "pending for me" list, so
+    nobody gets alerted about a request they couldn't open anyway."""
+    result = await db.execute(
+        select(User).where(User.role == req.approver_role, User.is_active.is_(True))
+    )
+    for candidate in result.scalars().all():
+        path = await get_scope_company_path(db=db, user=candidate)
+        if path is None or await _request_in_company_scope(db, req, path):
+            db.add(Notification(recipient_id=candidate.id, request_id=req.id, type="pending_approval"))
+
+
+def _notify_requester_decided(db: AsyncSession, req: Request) -> None:
+    db.add(Notification(recipient_id=req.requester_id, request_id=req.id, type="decided"))
 
 
 def _item_to_out(item: RequestItem) -> RequestItemOut:
@@ -285,6 +310,8 @@ async def create_request(
                 note=f"Yêu cầu {body.type} được tạo (mã yêu cầu {req.id})",
             )
         )
+
+    await _notify_pending_approvers(db, req)
 
     await db.commit()
     await db.refresh(req)
@@ -483,6 +510,8 @@ async def decide_request(
 
     if body.approve:
         await _apply_effect(db, req, items, user)
+
+    _notify_requester_decided(db, req)
 
     await db.commit()
     await db.refresh(req)
