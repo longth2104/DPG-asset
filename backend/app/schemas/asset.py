@@ -126,6 +126,10 @@ class AssetOut(AssetListItem):
     replacement_priority: str | None = None
     purchase_source: str | None = None
     notes: str | None = None
+    # Columns an Excel import found but couldn't match to a known field —
+    # keyed by their raw header text (see services/excel.py). Read-only;
+    # never set via AssetCreate/AssetUpdate.
+    extra_fields: dict | None = None
     created_at: datetime
     updated_at: datetime
     events: list[AssetEventOut] = []

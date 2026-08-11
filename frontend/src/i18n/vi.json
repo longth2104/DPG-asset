@@ -119,6 +119,7 @@
     "warranty": "Bảo hành (tháng)",
     "purchaseSource": "Nơi mua",
     "notes": "Ghi chú",
+    "extraFields": "Thông tin bổ sung từ file nhập",
     "history": "Lý lịch thiết bị",
     "addNote": "Thêm ghi chú",
     "notePlaceholder": "Ví dụ: đã chuyển cho công trình X, gửi sửa chữa...",

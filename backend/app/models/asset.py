@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -71,6 +71,12 @@ class Asset(Base):
     replacement_priority: Mapped[str | None] = mapped_column(String, nullable=True)
     purchase_source: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Columns encountered on Excel import that don't match any known field
+    # above — keyed by the raw header text as it appeared in the sheet, so
+    # nothing an import file contains is silently dropped even when this
+    # app's schema has no dedicated field for it (e.g. per-software license
+    # status columns). Never written by the create/edit form; import-only.
+    extra_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

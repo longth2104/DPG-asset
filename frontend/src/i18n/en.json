@@ -119,6 +119,7 @@
     "warranty": "Warranty (months)",
     "purchaseSource": "Purchased from",
     "notes": "Notes",
+    "extraFields": "Additional info from import",
     "history": "Asset history",
     "addNote": "Add note",
     "notePlaceholder": "e.g. moved to site X, sent for repair...",

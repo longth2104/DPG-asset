@@ -405,6 +405,7 @@ async def get_asset(
         replacement_priority=asset.replacement_priority,
         purchase_source=asset.purchase_source,
         notes=asset.notes,
+        extra_fields=asset.extra_fields,
         created_at=asset.created_at,
         updated_at=asset.updated_at,
         events=[AssetEventOut.model_validate(e) for e in events],

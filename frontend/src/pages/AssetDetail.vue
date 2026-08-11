@@ -192,6 +192,18 @@
               </div>
             </dl>
 
+            <template v-if="extraFieldEntries.length">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mt-6 mb-3">
+                {{ $t('assetDetail.extraFields') }}
+              </h2>
+              <dl class="space-y-2 text-sm">
+                <div v-for="[key, value] in extraFieldEntries" :key="key" class="grid grid-cols-2 gap-2">
+                  <dt class="text-gray-500 break-words">{{ key }}</dt>
+                  <dd class="break-words">{{ value }}</dd>
+                </div>
+              </dl>
+            </template>
+
             <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mt-6 mb-3">
               {{ $t('assetDetail.documents') }}
             </h2>
@@ -258,6 +270,7 @@ const auth = useAuthStore()
 
 const noteText = ref('')
 const asset = computed(() => store.currentAsset)
+const extraFieldEntries = computed(() => Object.entries(asset.value?.extra_fields || {}))
 
 const editing = ref(false)
 const saving = ref(false)
