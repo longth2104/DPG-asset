@@ -1,4 +1,5 @@
 import secrets
+import unicodedata
 
 import httpx
 from sqlalchemy import select
@@ -61,3 +62,30 @@ async def find_or_create_user_by_email(db: AsyncSession, email: str) -> User | N
     db.add(user)
     await db.flush()
     return user
+
+
+def _normalize_name(name: str | None) -> str:
+    """Comparison key that's tolerant of stray whitespace and NFC/NFD
+    Unicode-encoding differences in Vietnamese text (the same accented name
+    typed in two files can decompose differently) — but doesn't strip
+    diacritics themselves, since those still distinguish different names."""
+    return " ".join(unicodedata.normalize("NFC", name or "").strip().lower().split())
+
+
+async def find_user_by_name(db: AsyncSession, name: str, directory: list[dict]) -> User | None:
+    """Resolves a plain holder name (e.g. an Excel column with no email, just
+    "Người sử dụng") against an already-fetched HRIS directory — only when
+    the name matches exactly one employee. Vietnamese full names collide
+    often enough that resolving an ambiguous match would risk linking the
+    asset to the wrong person, so this never guesses: 0 or >1 matches both
+    return None and the holder stays a free-text label, same as before."""
+    key = _normalize_name(name)
+    if not key:
+        return None
+    matches = [e for e in directory if _normalize_name(e.get("name")) == key]
+    if len(matches) != 1:
+        return None
+    email = matches[0].get("email")
+    if not email:
+        return None
+    return await find_or_create_user_by_email(db, email)

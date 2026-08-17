@@ -36,8 +36,9 @@ from app.schemas.asset import (
 from app.schemas.document import DocumentOut
 from app.services.excel import build_asset_xlsx, parse_asset_xlsx
 from app.services.pdf import render_asset_dossier_pdf, render_asset_export_pdf
+from app.services.hris import search_employees
 from app.services.rds import fetch_all_assets
-from app.services.user_provisioning import find_or_create_user_by_email
+from app.services.user_provisioning import find_or_create_user_by_email, find_user_by_name
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -200,6 +201,15 @@ async def import_assets(
         existing_codes = {code for (code,) in result.all()}
     seen_codes = set(existing_codes)
 
+    # Fetched once for the whole file rather than per row — matched against
+    # each row's plain-text `holder` name below when there's no holder_email
+    # column. Empty (not an error) if HRIS is unreachable: holders just stay
+    # free text, same as before this existed.
+    try:
+        hris_directory = await search_employees()
+    except (RuntimeError, httpx.HTTPError):
+        hris_directory = []
+
     imported = 0
     errors: list[dict] = []
     for idx, row in enumerate(rows, start=2):
@@ -215,14 +225,19 @@ async def import_assets(
             row["asset_code"] = code
         seen_codes.add(code)
 
-        # Not a real Asset column — resolved to holder_user_id (reliable
-        # exact match) rather than the free-text `holder` name column (kept
-        # deliberately unmatched, per the comment on Asset.holder_user_id:
-        # Vietnamese name-matching is too unreliable).
+        # Not a real Asset column — resolved to holder_user_id via a
+        # reliable exact-email match.
         holder_email = row.pop("holder_email", None)
         holder_user_id = None
         if holder_email:
             holder = await find_or_create_user_by_email(db, holder_email)
+            holder_user_id = holder.id if holder else None
+        elif row.get("holder") and hris_directory:
+            # No email column — fall back to matching the free-text holder
+            # name against HRIS. Only links when the name is unambiguous
+            # (see find_user_by_name); otherwise `holder` stays plain text,
+            # same as always.
+            holder = await find_user_by_name(db, row["holder"], hris_directory)
             holder_user_id = holder.id if holder else None
 
         # New assets belong to the importer's own company — not exposed as

@@ -48,9 +48,13 @@ class Asset(Base):
     legal_entity: Mapped[str] = mapped_column(String, nullable=False, default="Đạt Phương")
     department: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     holder: Mapped[str | None] = mapped_column(String, nullable=True)
-    # Nullable, forward-only link: legacy imported rows keep `holder` as a
-    # free-text label until someone reassigns them through the app — no bulk
-    # name-matching backfill (Vietnamese full-name matching is too unreliable).
+    # Nullable link to a real account. Excel import tries to resolve this at
+    # import time — reliably via a holder_email column, or (best-effort) by
+    # matching the free-text holder name against HRIS when the name is
+    # unambiguous (see find_user_by_name) — but never guesses on a collision,
+    # so some rows still end up with `holder` as text only until someone
+    # reassigns them through the app. RDS sync never touches this field at
+    # all (RDS carries no holder/assignment data).
     holder_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
