@@ -58,6 +58,45 @@
           </div>
         </div>
 
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+            {{ $t('createAsset.company') }}
+          </label>
+          <select
+            v-model="form.company_id"
+            required
+            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+          >
+            <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {{ $t('createAsset.customFields') }}
+            </label>
+            <button type="button" @click="addCustomField" class="text-xs font-semibold text-primary hover:underline">
+              + {{ $t('createAsset.addField') }}
+            </button>
+          </div>
+          <div v-for="(f, idx) in customFields" :key="idx" class="flex items-center gap-2 mb-2">
+            <input
+              v-model="f.key"
+              :placeholder="$t('createAsset.fieldName')"
+              class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            />
+            <input
+              v-model="f.value"
+              :placeholder="$t('createAsset.fieldValue')"
+              class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            />
+            <button type="button" @click="customFields.splice(idx, 1)" class="text-xs text-red-600 hover:underline flex-shrink-0">
+              {{ $t('requests.fields.removeItem') }}
+            </button>
+          </div>
+        </div>
+
         <p v-if="error" class="text-red-600 text-xs">{{ $t(error) }}</p>
 
         <button
@@ -73,13 +112,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
+import { useAuthStore } from '@/stores/auth'
+import { useCompaniesStore } from '@/stores/companies'
 
 const router = useRouter()
 const store = useAssetsStore()
+const companiesStore = useCompaniesStore()
+const auth = useAuthStore()
 
 const form = ref({
   name: '',
@@ -89,16 +132,32 @@ const form = ref({
   holder: '',
   location: '',
   original_cost: null,
+  company_id: auth.user?.company_id || '',
 })
+const customFields = ref([])
 const submitting = ref(false)
 const error = ref('')
+
+function addCustomField() {
+  customFields.value.push({ key: '', value: '' })
+}
+
+onMounted(() => {
+  if (!companiesStore.companies.length) companiesStore.fetchAll()
+})
 
 async function submit() {
   if (!form.value.name || submitting.value) return
   submitting.value = true
   error.value = ''
   try {
-    const asset = await store.createAsset(form.value)
+    const extra_fields = {}
+    for (const f of customFields.value) {
+      if (f.key.trim()) extra_fields[f.key.trim()] = f.value
+    }
+    const payload = { ...form.value }
+    if (Object.keys(extra_fields).length) payload.extra_fields = extra_fields
+    const asset = await store.createAsset(payload)
     router.push(`/assets/${asset.id}`)
   } catch (e) {
     error.value = e.response?.data?.detail ?? 'common.genericError'

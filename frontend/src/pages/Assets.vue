@@ -14,7 +14,7 @@
         </router-link>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
         <input
           v-model="search"
           :placeholder="$t('assets.search')"
@@ -31,6 +31,10 @@
         <select v-model="statusFilter" class="bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded">
           <option value="">{{ $t('assets.filters.status') }} — {{ $t('assets.filters.all') }}</option>
           <option v-for="s in statuses" :key="s" :value="s">{{ $t(`assets.status.${s}`) }}</option>
+        </select>
+        <select v-model="companyFilter" class="bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded">
+          <option value="">{{ $t('assets.columns.company') }} — {{ $t('assets.filters.all') }}</option>
+          <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
         </select>
       </div>
 
@@ -52,6 +56,14 @@
         >
           {{ $t('assets.io.exportPdf') }}
         </button>
+        <select
+          v-if="auth.isAssetManager"
+          v-model="importDefaultCompanyId"
+          :title="$t('assets.io.importDefaultCompanyHint')"
+          class="bg-white text-gray-900 border border-gray-200 px-3 py-1.5 text-sm rounded"
+        >
+          <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
+        </select>
         <label
           v-if="auth.isAssetManager"
           class="bg-white text-gray-900 hover:bg-gray-100 text-sm font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer"
@@ -166,6 +178,7 @@
               <th class="text-left px-4 py-3">{{ $t('assets.columns.category') }}</th>
               <th class="text-left px-4 py-3">{{ $t('assets.columns.department') }}</th>
               <th class="text-left px-4 py-3">{{ $t('assets.columns.holder') }}</th>
+              <th class="text-left px-4 py-3">{{ $t('assets.columns.company') }}</th>
               <th class="text-left px-4 py-3">{{ $t('assets.columns.status') }}</th>
             </tr>
           </thead>
@@ -184,6 +197,7 @@
               <td class="px-4 py-3">{{ a.category }}</td>
               <td class="px-4 py-3">{{ a.department }}</td>
               <td class="px-4 py-3">{{ a.holder }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">{{ companyCode(a.company_id) }}</td>
               <td class="px-4 py-3 whitespace-nowrap">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap">
                   {{ $t(`assets.status.${a.status}`) }}
@@ -203,17 +217,21 @@ import { useI18n } from 'vue-i18n'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
 import { useAuthStore } from '@/stores/auth'
+import { useCompaniesStore } from '@/stores/companies'
 import api from '@/utils/api'
 import { downloadBlob } from '@/utils/download'
 
 const store = useAssetsStore()
 const auth = useAuthStore()
+const companiesStore = useCompaniesStore()
 const { t } = useI18n()
 
 const search = ref('')
 const departmentFilter = ref('')
 const categoryFilter = ref('')
 const statusFilter = ref('')
+const companyFilter = ref('')
+const importDefaultCompanyId = ref(auth.user?.company_id || '')
 const selectedIds = ref(new Set())
 const exporting = ref(false)
 const importing = ref(false)
@@ -225,7 +243,10 @@ const syncing = ref(false)
 const syncResult = ref(null)
 const syncError = ref('')
 
-onMounted(() => store.fetchAssets())
+onMounted(() => {
+  store.fetchAssets()
+  if (!companiesStore.companies.length) companiesStore.fetchAll()
+})
 
 const departments = computed(() =>
   [...new Set(store.assets.map((a) => a.department).filter(Boolean))].sort()
@@ -235,12 +256,17 @@ const categories = computed(() =>
 )
 const statuses = computed(() => [...new Set(store.assets.map((a) => a.status).filter(Boolean))])
 
+function companyCode(companyId) {
+  return companiesStore.companies.find((c) => c.id === companyId)?.code || '—'
+}
+
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
   return store.assets.filter((a) => {
     if (departmentFilter.value && a.department !== departmentFilter.value) return false
     if (categoryFilter.value && a.category !== categoryFilter.value) return false
     if (statusFilter.value && a.status !== statusFilter.value) return false
+    if (companyFilter.value && a.company_id !== companyFilter.value) return false
     if (q) {
       const haystack = `${a.name} ${a.asset_code} ${a.holder}`.toLowerCase()
       if (!haystack.includes(q)) return false
@@ -294,6 +320,7 @@ async function onImportPick(e) {
   try {
     const form = new FormData()
     form.append('file', file)
+    if (importDefaultCompanyId.value) form.append('default_company_id', importDefaultCompanyId.value)
     const { data } = await api.post('/api/assets/import', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })

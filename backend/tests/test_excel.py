@@ -25,6 +25,7 @@ def _wb_bytes(rows: list[list]) -> bytes:
 class _FakeAsset:
     def __init__(self, **kwargs):
         self.holder_user_id = None
+        self.company_id = None
         for k, v in kwargs.items():
             setattr(self, k, v)
 

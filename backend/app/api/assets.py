@@ -1,7 +1,7 @@
 import uuid
 
 import httpx
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -159,7 +159,12 @@ async def export_assets(
         if holder_ids:
             result = await db.execute(select(User.id, User.email).where(User.id.in_(holder_ids)))
             holder_emails = dict(result.all())
-        content = build_asset_xlsx(assets, holder_emails)
+        company_ids = {a.company_id for a in assets if a.company_id}
+        company_codes = {}
+        if company_ids:
+            result = await db.execute(select(Company.id, Company.code).where(Company.id.in_(company_ids)))
+            company_codes = dict(result.all())
+        content = build_asset_xlsx(assets, holder_emails, company_codes)
         media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         filename = "danh-sach-tai-san.xlsx"
     else:
@@ -177,6 +182,10 @@ async def export_assets(
 @router.post("/import", response_model=AssetImportResult)
 async def import_assets(
     file: UploadFile = File(...),
+    # Fallback company for any row whose file has no (or an unrecognized)
+    # company column — the frontend always sends this, pre-filled to the
+    # importer's own company but changeable, per docs/field.md.
+    default_company_id: uuid.UUID | None = Form(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_asset_manager),
 ):
@@ -188,6 +197,11 @@ async def import_assets(
         rows = parse_asset_xlsx(content)
     except ValueError as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+
+    companies = (await db.execute(select(Company))).scalars().all()
+    companies_by_code = {c.code.strip().lower(): c for c in companies if c.code}
+    companies_by_name = {c.name.strip().lower(): c for c in companies if c.name}
+    fallback_company_id = default_company_id or user.company_id
 
     # A duplicate asset_code would otherwise crash the whole import with an
     # unhandled IntegrityError — a real risk given export→edit→re-import is
@@ -240,10 +254,16 @@ async def import_assets(
             holder = await find_user_by_name(db, row["holder"], hris_directory)
             holder_user_id = holder.id if holder else None
 
-        # New assets belong to the importer's own company — not exposed as
-        # an importable column, so it can't be used to plant assets into a
-        # different company than the one you're scoped to.
-        asset = Asset(**row, holder_user_id=holder_user_id, created_by=user.id, company_id=user.company_id)
+        # Not a real Asset column — a "Công ty" column (matched by code or
+        # name) resolves straight to a real Company; anything else (column
+        # missing, or its value matching no known company) falls back to
+        # default_company_id, which itself falls back to the importer's own
+        # company — so this never ends up unset.
+        company_text = (row.pop("company", None) or "").strip().lower()
+        company = companies_by_code.get(company_text) or companies_by_name.get(company_text)
+        company_id = company.id if company else fallback_company_id
+
+        asset = Asset(**row, holder_user_id=holder_user_id, created_by=user.id, company_id=company_id)
         db.add(asset)
         await db.flush()
         await _log_event(db, asset.id, user.id, "created", f"Nhập từ file Excel: {file.filename}")
@@ -437,8 +457,11 @@ async def create_asset(
     data = body.model_dump()
     if not data.get("asset_code"):
         data["asset_code"] = _generate_asset_code()
+    # Compulsory going forward — defaults to the creator's own company when
+    # the form doesn't send one (never left unset).
+    company_id = data.pop("company_id", None) or user.company_id
 
-    asset = Asset(**data, created_by=user.id, company_id=user.company_id)
+    asset = Asset(**data, created_by=user.id, company_id=company_id)
     db.add(asset)
     await db.flush()
     await _log_event(db, asset.id, user.id, "created", f"Tạo tài sản {asset.name}")

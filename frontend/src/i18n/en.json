@@ -75,6 +75,7 @@
       "category": "Category",
       "department": "Department",
       "holder": "Holder",
+      "company": "Company",
       "status": "Status"
     },
     "status": {
@@ -93,7 +94,8 @@
       "exportSelected": "Export selected",
       "exportAll": "Export all (filtered)",
       "importTitle": "Import assets from Excel",
-      "importHint": "Use a file exported from this app, or matching column order.",
+      "importHint": "Any column layout is accepted — recognized columns fill in, missing ones stay empty, unrecognized ones are kept as extra info.",
+      "importDefaultCompanyHint": "Default company for rows without one in the file",
       "chooseFile": "Choose file",
       "importing": "Importing...",
       "importResult": "Imported {imported}, skipped {skipped}",
@@ -119,7 +121,7 @@
     "warranty": "Warranty (months)",
     "purchaseSource": "Purchased from",
     "notes": "Notes",
-    "extraFields": "Additional info from import",
+    "extraFields": "Additional fields",
     "history": "Asset history",
     "addNote": "Add note",
     "notePlaceholder": "e.g. moved to site X, sent for repair...",
@@ -143,6 +145,11 @@
     "location": "Location",
     "manufacturer": "Manufacturer",
     "originalCost": "Original cost (VND)",
+    "company": "Company",
+    "customFields": "Custom fields",
+    "addField": "Add field",
+    "fieldName": "Field name",
+    "fieldValue": "Value",
     "submit": "Create asset"
   },
   "profile": {

@@ -39,6 +39,9 @@ COLUMNS = [
     ("year_put_in_use", "Năm đưa vào sử dụng"),
     ("budget_plan_year", "Kế hoạch NS năm"),
     ("budget_actual_year", "Thực hiện NS năm"),
+    # Not an Asset column either — resolved to/from company_id at the API
+    # layer (matched by company code or name), same pattern as holder_email.
+    ("company", "Công ty"),
 ]
 
 _STATUS_LABEL_TO_CODE = {label.lower(): code for code, label in ASSET_STATUS_LABELS.items()}
@@ -59,6 +62,7 @@ _FIELD_ALIASES = {
     "year_put_in_use": ["năm sử dụng"],
     "budget_plan_year": ["kế hoạch ns năm"],
     "budget_actual_year": ["thực hiện ns năm"],
+    "company": ["đơn vị", "chi nhánh", "công ty/chi nhánh"],
 }
 
 # Columns that carry no asset data of their own (row numbering, section
@@ -150,10 +154,12 @@ def _coerce_date(value):
     return None
 
 
-def build_asset_xlsx(assets, holder_emails: dict | None = None) -> bytes:
-    """`holder_emails` maps Asset.holder_user_id -> email, resolved by the
-    caller (assets.py) since `holder_email` isn't a real Asset column."""
+def build_asset_xlsx(assets, holder_emails: dict | None = None, company_codes: dict | None = None) -> bytes:
+    """`holder_emails` maps Asset.holder_user_id -> email and `company_codes`
+    maps Asset.company_id -> code, both resolved by the caller (assets.py)
+    since neither `holder_email` nor `company` is a real Asset column."""
     holder_emails = holder_emails or {}
+    company_codes = company_codes or {}
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Danh sách tài sản"
@@ -165,6 +171,8 @@ def build_asset_xlsx(assets, holder_emails: dict | None = None) -> bytes:
         for col_idx, (field, _) in enumerate(COLUMNS, start=1):
             if field == "holder_email":
                 value = holder_emails.get(asset.holder_user_id)
+            elif field == "company":
+                value = company_codes.get(asset.company_id)
             else:
                 value = getattr(asset, field)
                 if field == "status":

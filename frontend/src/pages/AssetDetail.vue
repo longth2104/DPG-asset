@@ -100,6 +100,12 @@
                   <input v-model="editForm.holder" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
                 </div>
               </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.company') }}</label>
+                <select v-model="editForm.company_id" required class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary">
+                  <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
+                </select>
+              </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.filters.location') }}</label>
@@ -123,6 +129,30 @@
               <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.notes') }}</label>
                 <textarea v-model="editForm.notes" rows="2" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs text-gray-500">{{ $t('assetDetail.extraFields') }}</label>
+                  <button type="button" @click="addCustomField" class="text-xs font-semibold text-primary hover:underline">
+                    + {{ $t('createAsset.addField') }}
+                  </button>
+                </div>
+                <div v-for="(f, idx) in editCustomFields" :key="idx" class="flex items-center gap-2 mb-2">
+                  <input
+                    v-model="f.key"
+                    :placeholder="$t('createAsset.fieldName')"
+                    class="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+                  />
+                  <input
+                    v-model="f.value"
+                    :placeholder="$t('createAsset.fieldValue')"
+                    class="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+                  />
+                  <button type="button" @click="editCustomFields.splice(idx, 1)" class="text-xs text-red-600 hover:underline flex-shrink-0">
+                    {{ $t('requests.fields.removeItem') }}
+                  </button>
+                </div>
               </div>
 
               <p v-if="editError" class="text-red-600 text-xs">{{ $t(editError) }}</p>
@@ -169,6 +199,10 @@
               <div class="grid grid-cols-2 gap-2">
                 <dt class="text-gray-500">{{ $t('assets.columns.holder') }}</dt>
                 <dd>{{ asset.holder || '—' }}</dd>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <dt class="text-gray-500">{{ $t('assets.columns.company') }}</dt>
+                <dd>{{ companyLabel(asset.company_id) }}</dd>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <dt class="text-gray-500">{{ $t('assets.filters.location') }}</dt>
@@ -259,6 +293,7 @@ import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
 import { useAuthStore } from '@/stores/auth'
+import { useCompaniesStore } from '@/stores/companies'
 import api from '@/utils/api'
 import { openBlobInNewTab } from '@/utils/download'
 
@@ -267,6 +302,7 @@ const ASSET_STATUSES = ['dang_su_dung', 'dang_sua_chua', 'cho_thanh_ly', 'da_tha
 const route = useRoute()
 const store = useAssetsStore()
 const auth = useAuthStore()
+const companiesStore = useCompaniesStore()
 
 const noteText = ref('')
 const asset = computed(() => store.currentAsset)
@@ -276,12 +312,25 @@ const editing = ref(false)
 const saving = ref(false)
 const editError = ref('')
 const editForm = reactive({})
+const editCustomFields = ref([])
+
+function addCustomField() {
+  editCustomFields.value.push({ key: '', value: '' })
+}
+
+function companyLabel(companyId) {
+  const c = companiesStore.companies.find((c) => c.id === companyId)
+  return c ? `${c.code} — ${c.name}` : '—'
+}
 
 function load() {
   store.fetchAsset(route.params.id)
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  if (!companiesStore.companies.length) companiesStore.fetchAll()
+})
 watch(() => route.params.id, load)
 
 function formatCurrency(value) {
@@ -323,7 +372,9 @@ function startEdit() {
     warranty_months: asset.value.warranty_months,
     purchase_source: asset.value.purchase_source,
     notes: asset.value.notes,
+    company_id: asset.value.company_id,
   })
+  editCustomFields.value = Object.entries(asset.value.extra_fields || {}).map(([key, value]) => ({ key, value }))
   editError.value = ''
   editing.value = true
 }
@@ -337,7 +388,11 @@ async function saveEdit() {
   saving.value = true
   editError.value = ''
   try {
-    await store.updateAsset(route.params.id, { ...editForm })
+    const extra_fields = {}
+    for (const f of editCustomFields.value) {
+      if (f.key.trim()) extra_fields[f.key.trim()] = f.value
+    }
+    await store.updateAsset(route.params.id, { ...editForm, extra_fields })
     editing.value = false
   } catch (e) {
     editError.value = e.response?.data?.detail ?? 'common.genericError'

@@ -11,6 +11,7 @@ from app.services.excel import build_asset_xlsx
 class _FakeAsset:
     def __init__(self, **kwargs):
         self.holder_user_id = None
+        self.company_id = None
         for k, v in kwargs.items():
             setattr(self, k, v)
 

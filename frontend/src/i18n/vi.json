@@ -75,6 +75,7 @@
       "category": "Nhóm thiết bị",
       "department": "Phòng ban",
       "holder": "Người sử dụng",
+      "company": "Công ty",
       "status": "Tình trạng"
     },
     "status": {
@@ -93,7 +94,8 @@
       "exportSelected": "Xuất mục đã chọn",
       "exportAll": "Xuất tất cả (theo bộ lọc)",
       "importTitle": "Nhập tài sản từ file Excel",
-      "importHint": "Dùng file được xuất từ hệ thống, hoặc sắp xếp đúng thứ tự cột.",
+      "importHint": "Chấp nhận mọi cách sắp xếp cột — cột nhận diện được sẽ tự điền, cột thiếu sẽ để trống, cột lạ sẽ được lưu làm thông tin bổ sung.",
+      "importDefaultCompanyHint": "Công ty mặc định cho các dòng không có trong file",
       "chooseFile": "Chọn file",
       "importing": "Đang nhập...",
       "importResult": "Đã nhập {imported}, bỏ qua {skipped}",
@@ -119,7 +121,7 @@
     "warranty": "Bảo hành (tháng)",
     "purchaseSource": "Nơi mua",
     "notes": "Ghi chú",
-    "extraFields": "Thông tin bổ sung từ file nhập",
+    "extraFields": "Thông tin bổ sung",
     "history": "Lý lịch thiết bị",
     "addNote": "Thêm ghi chú",
     "notePlaceholder": "Ví dụ: đã chuyển cho công trình X, gửi sửa chữa...",
@@ -143,6 +145,11 @@
     "location": "Vị trí",
     "manufacturer": "Hãng sản xuất",
     "originalCost": "Nguyên giá (VNĐ)",
+    "company": "Công ty",
+    "customFields": "Trường tùy chỉnh",
+    "addField": "Thêm trường",
+    "fieldName": "Tên trường",
+    "fieldValue": "Giá trị",
     "submit": "Tạo tài sản"
   },
   "profile": {

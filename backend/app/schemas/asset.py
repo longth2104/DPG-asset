@@ -28,6 +28,12 @@ class AssetCreate(BaseModel):
     purchase_source: str | None = None
     notes: str | None = None
     asset_code: str | None = None
+    # Which company (holding-hierarchy entity) this asset belongs to —
+    # defaults to the creator's own company when omitted (see create_asset).
+    company_id: uuid.UUID | None = None
+    # Ad-hoc key/value fields the user adds directly on the form — same
+    # column Excel import uses for columns it can't map to a known field.
+    extra_fields: dict[str, str] | None = None
 
 
 class AssetUpdate(BaseModel):
@@ -52,6 +58,8 @@ class AssetUpdate(BaseModel):
     purchase_source: str | None = None
     notes: str | None = None
     asset_code: str | None = None
+    company_id: uuid.UUID | None = None
+    extra_fields: dict[str, str] | None = None
 
 
 class AssetListItem(BaseModel):
@@ -64,6 +72,7 @@ class AssetListItem(BaseModel):
     location: str | None = None
     status: str
     domain: str
+    company_id: uuid.UUID | None = None
 
     model_config = {"from_attributes": True}
 

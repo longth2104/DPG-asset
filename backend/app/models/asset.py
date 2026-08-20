@@ -75,11 +75,10 @@ class Asset(Base):
     replacement_priority: Mapped[str | None] = mapped_column(String, nullable=True)
     purchase_source: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # Columns encountered on Excel import that don't match any known field
-    # above — keyed by the raw header text as it appeared in the sheet, so
-    # nothing an import file contains is silently dropped even when this
-    # app's schema has no dedicated field for it (e.g. per-software license
-    # status columns). Never written by the create/edit form; import-only.
+    # Ad-hoc key/value data with no dedicated column — populated either by
+    # Excel import (keyed by the raw header text of a column that matched no
+    # known field, e.g. per-software license status columns) or directly by
+    # a user adding a custom field on the create/edit form.
     extra_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
