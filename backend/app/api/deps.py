@@ -2,7 +2,7 @@ import secrets
 import uuid
 
 import redis.asyncio as aioredis
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -96,14 +96,27 @@ async def get_scope_company_path(
     return company.path
 
 
-async def require_eoffice_key(authorization: str | None = Header(None)) -> None:
+async def require_eoffice_key(
+    authorization: str | None = Header(None),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+    api_key_header: str | None = Header(None, alias="Api-Key"),
+    api_key_query: str | None = Query(None, alias="api_key"),
+) -> None:
     """Gates /api/eoffice/* — the reverse direction from HRIS/RDS: e-office
     calls into AMS, authenticating with a static shared key rather than a
-    user session. Constant-time compare since this is a bearer secret."""
+    user session. Accepts the key however the caller happens to send it
+    (Authorization: Bearer, X-API-Key, Api-Key, or ?api_key= query param) —
+    e-office's own client isn't ours to configure, so this is deliberately
+    lenient about *where* the key travels while still being strict about
+    the key itself (constant-time compare, each candidate checked)."""
     if not settings.EOFFICE_API_KEY:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "E-office integration not configured")
-    expected = f"Bearer {settings.EOFFICE_API_KEY}"
-    if not authorization or not secrets.compare_digest(authorization, expected):
+    expected = settings.EOFFICE_API_KEY
+    bearer_token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        bearer_token = authorization[len("bearer "):].strip()
+    candidates = [bearer_token, x_api_key, api_key_header, api_key_query]
+    if not any(c and secrets.compare_digest(c, expected) for c in candidates):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid API key")
 
 

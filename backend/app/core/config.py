@@ -32,7 +32,8 @@ class Settings(BaseSettings):
 
     # Inbound key for the e-office (datphuong.vn) integration — the reverse
     # direction from HRIS/RDS above: e-office calls *into* AMS, authenticating
-    # with this key as "Authorization: Bearer <key>". Empty disables the
+    # with this key sent via Authorization: Bearer, X-API-Key, Api-Key, or
+    # ?api_key= (see deps.require_eoffice_key). Empty disables the
     # integration (all /api/eoffice/* calls 503).
     EOFFICE_API_KEY: str = ""
 
