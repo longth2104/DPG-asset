@@ -61,13 +61,20 @@
   "assets": {
     "title": "Asset registry",
     "newAsset": "Add asset",
-    "search": "Search by name, asset code, holder...",
+    "search": "Search by name, asset code, holder, or holder's email...",
+    "searchHint": "Also matches the linked holder's HRIS email — try typing someone's email to find what they currently hold.",
     "filters": {
       "department": "Department",
       "category": "Category",
       "status": "Status",
       "location": "Location",
       "all": "All"
+    },
+    "pagination": {
+      "summary": "{total} asset(s)",
+      "prev": "Previous",
+      "next": "Next",
+      "page": "Page {page} / {totalPages}"
     },
     "columns": {
       "code": "Asset code",

@@ -18,6 +18,7 @@
         <input
           v-model="search"
           :placeholder="$t('assets.search')"
+          :title="$t('assets.searchHint')"
           class="lg:col-span-2 bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded focus:outline-none focus:border-primary"
         />
         <select v-model="departmentFilter" class="bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded">
@@ -184,7 +185,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="a in filtered"
+              v-for="a in paginated"
               :key="a.id"
               class="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
               @click="$router.push(`/assets/${a.id}`)"
@@ -207,12 +208,33 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="filtered.length" class="flex items-center justify-between mt-4 text-sm text-white/80">
+        <span>{{ $t('assets.pagination.summary', { total: filtered.length }) }}</span>
+        <div class="flex items-center gap-3">
+          <button
+            @click="page--"
+            :disabled="page <= 1"
+            class="bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+          >
+            {{ $t('assets.pagination.prev') }}
+          </button>
+          <span>{{ $t('assets.pagination.page', { page, totalPages }) }}</span>
+          <button
+            @click="page++"
+            :disabled="page >= totalPages"
+            class="bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+          >
+            {{ $t('assets.pagination.next') }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
@@ -220,6 +242,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useCompaniesStore } from '@/stores/companies'
 import api from '@/utils/api'
 import { downloadBlob } from '@/utils/download'
+
+const PAGE_SIZE = 50
 
 const store = useAssetsStore()
 const auth = useAuthStore()
@@ -231,6 +255,7 @@ const departmentFilter = ref('')
 const categoryFilter = ref('')
 const statusFilter = ref('')
 const companyFilter = ref('')
+const page = ref(1)
 const importDefaultCompanyId = ref(auth.user?.company_id || '')
 const selectedIds = ref(new Set())
 const exporting = ref(false)
@@ -268,22 +293,39 @@ const filtered = computed(() => {
     if (statusFilter.value && a.status !== statusFilter.value) return false
     if (companyFilter.value && a.company_id !== companyFilter.value) return false
     if (q) {
-      const haystack = `${a.name} ${a.asset_code} ${a.holder}`.toLowerCase()
+      const haystack = `${a.name} ${a.asset_code} ${a.holder} ${a.holder_email || ''}`.toLowerCase()
       if (!haystack.includes(q)) return false
     }
     return true
   })
 })
 
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / PAGE_SIZE)))
+const paginated = computed(() => {
+  const start = (page.value - 1) * PAGE_SIZE
+  return filtered.value.slice(start, start + PAGE_SIZE)
+})
+
+// Any filter/search change can shrink the result set below the current
+// page — snap back to page 1 rather than showing an empty page.
+watch([search, departmentFilter, categoryFilter, statusFilter, companyFilter], () => {
+  page.value = 1
+})
+watch(totalPages, (max) => {
+  if (page.value > max) page.value = max
+})
+
+// "Select all" applies to the current page only — matches what's actually
+// visible/checkable, not every filtered result across every page.
 const allSelected = computed(
-  () => filtered.value.length > 0 && filtered.value.every((a) => selectedIds.value.has(a.id))
+  () => paginated.value.length > 0 && paginated.value.every((a) => selectedIds.value.has(a.id))
 )
 
 function toggleAll() {
   if (allSelected.value) {
-    filtered.value.forEach((a) => selectedIds.value.delete(a.id))
+    paginated.value.forEach((a) => selectedIds.value.delete(a.id))
   } else {
-    filtered.value.forEach((a) => selectedIds.value.add(a.id))
+    paginated.value.forEach((a) => selectedIds.value.add(a.id))
   }
   selectedIds.value = new Set(selectedIds.value)
 }

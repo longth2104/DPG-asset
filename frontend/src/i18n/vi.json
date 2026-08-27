@@ -61,13 +61,20 @@
   "assets": {
     "title": "Danh sách tài sản",
     "newAsset": "Thêm tài sản",
-    "search": "Tìm theo tên, mã tài sản, người sử dụng...",
+    "search": "Tìm theo tên, mã tài sản, người sử dụng, hoặc email người sử dụng...",
+    "searchHint": "Cũng tìm theo email HRIS của người đang giữ tài sản — thử nhập email của ai đó để xem họ đang giữ gì.",
     "filters": {
       "department": "Phòng ban",
       "category": "Nhóm thiết bị",
       "status": "Tình trạng",
       "location": "Vị trí",
       "all": "Tất cả"
+    },
+    "pagination": {
+      "summary": "{total} tài sản",
+      "prev": "Trước",
+      "next": "Sau",
+      "page": "Trang {page} / {totalPages}"
     },
     "columns": {
       "code": "Mã tài sản",

@@ -73,6 +73,11 @@ class AssetListItem(BaseModel):
     status: str
     domain: str
     company_id: uuid.UUID | None = None
+    # Not a real Asset column — the linked holder_user_id's email, resolved
+    # by the caller (list_assets) so the list search can match by email
+    # without a separate round trip. Null when holder isn't linked to a
+    # real account (see Asset.holder_user_id).
+    holder_email: str | None = None
 
     model_config = {"from_attributes": True}
 

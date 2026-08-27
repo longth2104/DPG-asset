@@ -57,6 +57,19 @@ def _scope_filter(stmt, company_path: str | None):
     return stmt
 
 
+def _asset_search_condition(pattern: str):
+    """Matches name/code/holder text same as before, plus (new) the linked
+    holder's email — so typing a person's HRIS email in the search box finds
+    whatever asset they currently hold, not just a literal name match."""
+    holder_ids_by_email = select(User.id).where(User.email.ilike(pattern))
+    return (
+        Asset.name.ilike(pattern)
+        | Asset.asset_code.ilike(pattern)
+        | Asset.holder.ilike(pattern)
+        | Asset.holder_user_id.in_(holder_ids_by_email)
+    )
+
+
 async def _get_asset_or_404(
     db: AsyncSession, asset_id: uuid.UUID, company_path: str | None = None
 ) -> Asset:
@@ -98,15 +111,24 @@ async def list_assets(
     if location:
         stmt = stmt.where(Asset.location == location)
     if search:
-        pattern = f"%{search}%"
-        stmt = stmt.where(
-            (Asset.name.ilike(pattern))
-            | (Asset.asset_code.ilike(pattern))
-            | (Asset.holder.ilike(pattern))
-        )
+        stmt = stmt.where(_asset_search_condition(f"%{search}%"))
     stmt = _scope_filter(stmt, company_path).order_by(Asset.name)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    assets = result.scalars().all()
+
+    holder_ids = {a.holder_user_id for a in assets if a.holder_user_id}
+    holder_emails = {}
+    if holder_ids:
+        result = await db.execute(select(User.id, User.email).where(User.id.in_(holder_ids)))
+        holder_emails = dict(result.all())
+
+    return [
+        AssetListItem(
+            **AssetListItem.model_validate(a).model_dump(exclude={"holder_email"}),
+            holder_email=holder_emails.get(a.holder_user_id),
+        )
+        for a in assets
+    ]
 
 
 @router.get("/mine", response_model=list[AssetListItem])
@@ -144,12 +166,7 @@ async def export_assets(
         if body.location:
             stmt = stmt.where(Asset.location == body.location)
         if body.search:
-            pattern = f"%{body.search}%"
-            stmt = stmt.where(
-                (Asset.name.ilike(pattern))
-                | (Asset.asset_code.ilike(pattern))
-                | (Asset.holder.ilike(pattern))
-            )
+            stmt = stmt.where(_asset_search_condition(f"%{body.search}%"))
     stmt = _scope_filter(stmt, company_path).order_by(Asset.name)
     assets = (await db.execute(stmt)).scalars().all()
 
