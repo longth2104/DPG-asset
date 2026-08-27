@@ -197,7 +197,10 @@
               <td class="px-4 py-3 font-medium text-primary">{{ a.name }}</td>
               <td class="px-4 py-3">{{ a.category }}</td>
               <td class="px-4 py-3">{{ a.department }}</td>
-              <td class="px-4 py-3">{{ a.holder }}</td>
+              <td class="px-4 py-3">
+                {{ a.holder }}
+                <span v-if="a.holder_email" class="block text-xs text-gray-400">{{ a.holder_email }}</span>
+              </td>
               <td class="px-4 py-3 whitespace-nowrap">{{ companyCode(a.company_id) }}</td>
               <td class="px-4 py-3 whitespace-nowrap">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap">

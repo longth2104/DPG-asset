@@ -442,8 +442,14 @@ async def get_asset(
         .all()
     )
 
+    holder_email = None
+    if asset.holder_user_id:
+        holder = await db.get(User, asset.holder_user_id)
+        holder_email = holder.email if holder else None
+
     return AssetOut(
-        **AssetListItem.model_validate(asset).model_dump(),
+        **AssetListItem.model_validate(asset).model_dump(exclude={"holder_email"}),
+        holder_email=holder_email,
         spec=asset.spec,
         serial_number=asset.serial_number,
         manufacturer=asset.manufacturer,

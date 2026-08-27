@@ -57,3 +57,22 @@ async def test_list_response_includes_holder_email_field(client, auth_headers, m
     resp = await client.get("/api/assets", headers=auth_headers(viewer))
     assert resp.status_code == 200
     assert resp.json()[0]["holder_email"] is None
+
+
+async def test_asset_detail_includes_linked_holder_email(client, auth_headers, make_user, make_asset, company):
+    viewer = await make_user(role="cbnv", company=company)
+    holder = await make_user(role="cbnv", company=company, email="linked.holder@datphuong.vn")
+    asset = await make_asset(name="Laptop có chủ", company=company, holder_user_id=holder.id)
+
+    resp = await client.get(f"/api/assets/{asset.id}", headers=auth_headers(viewer))
+    assert resp.status_code == 200
+    assert resp.json()["holder_email"] == "linked.holder@datphuong.vn"
+
+
+async def test_asset_detail_holder_email_null_when_unlinked(client, auth_headers, make_user, make_asset, company):
+    viewer = await make_user(role="cbnv", company=company)
+    asset = await make_asset(name="Laptop chưa liên kết", company=company, holder="Ai đó")
+
+    resp = await client.get(f"/api/assets/{asset.id}", headers=auth_headers(viewer))
+    assert resp.status_code == 200
+    assert resp.json()["holder_email"] is None

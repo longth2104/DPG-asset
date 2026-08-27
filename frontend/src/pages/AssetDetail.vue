@@ -198,7 +198,10 @@
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <dt class="text-gray-500">{{ $t('assets.columns.holder') }}</dt>
-                <dd>{{ asset.holder || '—' }}</dd>
+                <dd>
+                  {{ asset.holder || '—' }}
+                  <span v-if="asset.holder_email" class="block text-xs text-gray-400">{{ asset.holder_email }}</span>
+                </dd>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <dt class="text-gray-500">{{ $t('assets.columns.company') }}</dt>
