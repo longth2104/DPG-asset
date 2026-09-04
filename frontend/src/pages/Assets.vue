@@ -100,6 +100,13 @@
           >
             {{ syncing ? $t('assets.io.syncing') : $t('assets.io.syncRds') }}
           </button>
+          <button
+            @click="backfillHolders"
+            :disabled="backfilling"
+            class="bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+          >
+            {{ backfilling ? $t('assets.io.backfilling') : $t('assets.io.backfillHolders') }}
+          </button>
         </template>
       </div>
 
@@ -121,6 +128,20 @@
       >
         <p class="text-red-600">{{ $t(syncError) }}</p>
         <button @click="syncError = ''" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+      </div>
+      <div
+        v-if="backfillResult"
+        class="bg-white text-gray-900 border border-gray-200 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p>{{ $t('assets.io.backfillResult', { linked: backfillResult.linked, scanned: backfillResult.scanned, unresolved: backfillResult.unresolved }) }}</p>
+        <button @click="backfillResult = null" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+      </div>
+      <div
+        v-if="backfillError"
+        class="bg-white text-gray-900 border border-red-300 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p class="text-red-600">{{ $t(backfillError) }}</p>
+        <button @click="backfillError = ''" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
       </div>
 
       <div
@@ -270,6 +291,9 @@ const deleteError = ref('')
 const syncing = ref(false)
 const syncResult = ref(null)
 const syncError = ref('')
+const backfilling = ref(false)
+const backfillResult = ref(null)
+const backfillError = ref('')
 
 onMounted(() => {
   store.fetchAssets()
@@ -419,6 +443,23 @@ async function syncRds() {
     syncError.value = err.response?.data?.detail ?? 'common.genericError'
   } finally {
     syncing.value = false
+  }
+}
+
+// Migrate dữ liệu cũ: liên kết tài sản chỉ có tên text (holder) với TÀI KHOẢN
+// nhân viên bằng cách khớp tên với danh bạ HRIS (đúng bộ khớp an toàn của import).
+async function backfillHolders() {
+  backfilling.value = true
+  backfillError.value = ''
+  backfillResult.value = null
+  try {
+    const { data } = await api.post('/api/assets/backfill-holders')
+    backfillResult.value = data
+    await store.fetchAssets()
+  } catch (err) {
+    backfillError.value = err.response?.data?.detail ?? 'common.genericError'
+  } finally {
+    backfilling.value = false
   }
 }
 </script>

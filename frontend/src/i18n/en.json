@@ -116,7 +116,10 @@
       "syncRds": "Sync from RDS",
       "syncing": "Syncing...",
       "syncResult": "RDS sync: {created} created, {updated} updated",
-      "syncUnmapped": "unrecognized company codes: {codes}"
+      "syncUnmapped": "unrecognized company codes: {codes}",
+      "backfillHolders": "Link holders to HRIS",
+      "backfilling": "Linking...",
+      "backfillResult": "Linked {linked} of {scanned} unlinked holder(s) to an HRIS account; {unresolved} still unmatched (name missing, not found, or ambiguous)."
     }
   },
   "assetDetail": {
@@ -149,6 +152,7 @@
     "category": "Category",
     "department": "Department",
     "holder": "Holder",
+    "holderPlaceholder": "Search HRIS employee by name / email…",
     "location": "Location",
     "manufacturer": "Manufacturer",
     "originalCost": "Original cost (VND)",

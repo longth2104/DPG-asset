@@ -39,7 +39,11 @@
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
               {{ $t('createAsset.holder') }}
             </label>
-            <input v-model="form.holder" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <HolderPicker
+              v-model:holder="form.holder"
+              v-model:holderEmail="form.holder_email"
+              :placeholder="$t('createAsset.holderPlaceholder')"
+            />
           </div>
         </div>
 
@@ -115,6 +119,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import HolderPicker from '@/components/HolderPicker.vue'
 import { useAssetsStore } from '@/stores/assets'
 import { useAuthStore } from '@/stores/auth'
 import { useCompaniesStore } from '@/stores/companies'
@@ -130,6 +135,7 @@ const form = ref({
   manufacturer: '',
   department: '',
   holder: '',
+  holder_email: '',
   location: '',
   original_cost: null,
   company_id: auth.user?.company_id || '',

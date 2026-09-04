@@ -515,13 +515,21 @@ async def create_asset(
     user: User = Depends(require_asset_manager),
 ):
     data = body.model_dump()
+    # Not an Asset column — resolve the picked HRIS employee's email to a real
+    # account (auto-provisioned from HRIS) and link it; `holder` text still
+    # carries the display name. Unresolved/empty email → link stays null.
+    holder_email = data.pop("holder_email", None)
+    holder_user_id = None
+    if holder_email:
+        holder = await find_or_create_user_by_email(db, holder_email)
+        holder_user_id = holder.id if holder else None
     if not data.get("asset_code"):
         data["asset_code"] = _generate_asset_code()
     # Compulsory going forward — defaults to the creator's own company when
     # the form doesn't send one (never left unset).
     company_id = data.pop("company_id", None) or user.company_id
 
-    asset = Asset(**data, created_by=user.id, company_id=company_id)
+    asset = Asset(**data, holder_user_id=holder_user_id, created_by=user.id, company_id=company_id)
     db.add(asset)
     await db.flush()
     await _log_event(db, asset.id, user.id, "created", f"Tạo tài sản {asset.name}")
@@ -541,12 +549,28 @@ async def update_asset(
     asset = await _get_asset_or_404(db, asset_id, company_path)
 
     changes = body.model_dump(exclude_unset=True)
-    if not changes:
+
+    # Not an Asset column — only acted on when the form actually sent it (a
+    # sentinel distinguishes "omitted" from "sent empty"). Sent with a value →
+    # re-link holder_user_id to that HRIS account; sent empty → clear the link.
+    _UNSET = object()
+    holder_email = changes.pop("holder_email", _UNSET)
+    holder_relinked = False
+    if holder_email is not _UNSET:
+        holder = await find_or_create_user_by_email(db, holder_email) if holder_email else None
+        new_holder_id = holder.id if holder else None
+        if asset.holder_user_id != new_holder_id:
+            asset.holder_user_id = new_holder_id
+            holder_relinked = True
+
+    if not changes and not holder_relinked:
         return asset
 
     status_changed = "status" in changes and changes["status"] != asset.status
     old_status = asset.status
     changed_fields = [f for f, v in changes.items() if getattr(asset, f) != v]
+    if holder_relinked:
+        changed_fields.append("holder_user_id")
 
     for field, value in changes.items():
         setattr(asset, field, value)
