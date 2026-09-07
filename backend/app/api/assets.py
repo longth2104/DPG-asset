@@ -30,7 +30,6 @@ from app.schemas.asset import (
     AssetImportResult,
     AssetListItem,
     AssetOut,
-    AssetHrisLinkResult,
     AssetSyncResult,
     AssetUpdate,
 )
@@ -291,6 +290,43 @@ async def import_assets(
     return AssetImportResult(imported=imported, skipped=len(errors), errors=errors)
 
 
+@router.post("/backfill-holders")
+async def backfill_holders(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_asset_manager),
+):
+    """Link assets that carry only a free-text holder (holder_user_id null) to a
+    real account by matching the name against the HRIS directory — the SAME
+    exact, unambiguous match the Excel import uses (find_user_by_name), which
+    auto-provisions the account from HRIS when needed and never guesses on a
+    name collision, so it can't mislink. Rows whose holder name is missing,
+    unmatched, or ambiguous stay free text (still findable via the
+    /eoffice/assets holder_name filter). Idempotent: re-running only revisits
+    rows that are still unlinked. Use it to repair data imported before an
+    email column existed or while HRIS was unreachable.
+    """
+    try:
+        hris_directory = await search_employees()
+    except (RuntimeError, httpx.HTTPError):
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Không truy cập được danh bạ HRIS")
+
+    result = await db.execute(
+        select(Asset).where(Asset.holder_user_id.is_(None), Asset.holder.isnot(None), Asset.holder != "")
+    )
+    assets = result.scalars().all()
+    linked = 0
+    for asset in assets:
+        holder = await find_user_by_name(db, asset.holder, hris_directory)
+        if not holder:
+            continue
+        asset.holder_user_id = holder.id
+        await db.flush()
+        await _log_event(db, asset.id, user.id, "note", f"Liên kết người giữ theo tài khoản HRIS: {holder.email}")
+        linked += 1
+    await db.commit()
+    return {"scanned": len(assets), "linked": linked, "unresolved": len(assets) - linked}
+
+
 @router.post("/delete", response_model=AssetDeleteResult)
 async def delete_assets(
     body: AssetDeleteRequest,
@@ -411,40 +447,6 @@ async def sync_from_rds(
     )
 
 
-@router.post("/link-holders-hris", response_model=AssetHrisLinkResult)
-async def link_holders_to_hris(
-    db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
-):
-    """Retroactively links free-text `holder` names to real accounts for
-    every asset that doesn't have one yet — the same best-effort,
-    unambiguous-name-only match Excel import already does at import time
-    (see find_user_by_name), just run once across existing data instead of
-    only for newly imported rows. Spans every company, so admin-only."""
-    try:
-        hris_directory = await search_employees()
-    except (RuntimeError, httpx.HTTPError) as e:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, f"HRIS unavailable: {e}")
-
-    result = await db.execute(
-        select(Asset).where(Asset.holder_user_id.is_(None), Asset.holder.is_not(None), Asset.holder != "")
-    )
-    assets = result.scalars().all()
-
-    linked = 0
-    unmatched = 0
-    for asset in assets:
-        holder = await find_user_by_name(db, asset.holder, hris_directory)
-        if holder:
-            asset.holder_user_id = holder.id
-            linked += 1
-        else:
-            unmatched += 1
-
-    await db.commit()
-    return AssetHrisLinkResult(linked=linked, unmatched=unmatched)
-
-
 @router.get("/{asset_id}", response_model=AssetOut)
 async def get_asset(
     asset_id: uuid.UUID,
@@ -513,13 +515,21 @@ async def create_asset(
     user: User = Depends(require_asset_manager),
 ):
     data = body.model_dump()
+    # Not an Asset column — resolve the picked HRIS employee's email to a real
+    # account (auto-provisioned from HRIS) and link it; `holder` text still
+    # carries the display name. Unresolved/empty email → link stays null.
+    holder_email = data.pop("holder_email", None)
+    holder_user_id = None
+    if holder_email:
+        holder = await find_or_create_user_by_email(db, holder_email)
+        holder_user_id = holder.id if holder else None
     if not data.get("asset_code"):
         data["asset_code"] = _generate_asset_code()
     # Compulsory going forward — defaults to the creator's own company when
     # the form doesn't send one (never left unset).
     company_id = data.pop("company_id", None) or user.company_id
 
-    asset = Asset(**data, created_by=user.id, company_id=company_id)
+    asset = Asset(**data, holder_user_id=holder_user_id, created_by=user.id, company_id=company_id)
     db.add(asset)
     await db.flush()
     await _log_event(db, asset.id, user.id, "created", f"Tạo tài sản {asset.name}")
@@ -539,12 +549,28 @@ async def update_asset(
     asset = await _get_asset_or_404(db, asset_id, company_path)
 
     changes = body.model_dump(exclude_unset=True)
-    if not changes:
+
+    # Not an Asset column — only acted on when the form actually sent it (a
+    # sentinel distinguishes "omitted" from "sent empty"). Sent with a value →
+    # re-link holder_user_id to that HRIS account; sent empty → clear the link.
+    _UNSET = object()
+    holder_email = changes.pop("holder_email", _UNSET)
+    holder_relinked = False
+    if holder_email is not _UNSET:
+        holder = await find_or_create_user_by_email(db, holder_email) if holder_email else None
+        new_holder_id = holder.id if holder else None
+        if asset.holder_user_id != new_holder_id:
+            asset.holder_user_id = new_holder_id
+            holder_relinked = True
+
+    if not changes and not holder_relinked:
         return asset
 
     status_changed = "status" in changes and changes["status"] != asset.status
     old_status = asset.status
     changed_fields = [f for f, v in changes.items() if getattr(asset, f) != v]
+    if holder_relinked:
+        changed_fields.append("holder_user_id")
 
     for field, value in changes.items():
         setattr(asset, field, value)

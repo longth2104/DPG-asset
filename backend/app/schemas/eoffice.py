@@ -13,6 +13,11 @@ class EofficeAssetOut(BaseModel):
     company_code: str | None = None
     holder_email: str | None = None
     holder_name: str | None = None
+    # Free-text holder name (Asset.holder) — what the AMS UI shows as "người
+    # đang sử dụng". Present even when the row was never linked to a real
+    # account (holder_user_id null), which is the common case for imported
+    # rows, so e-office can still display and match the holder by name.
+    holder: str | None = None
 
 
 class EofficeAssignmentIn(BaseModel):

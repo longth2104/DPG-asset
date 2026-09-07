@@ -118,9 +118,9 @@
       "syncing": "Syncing...",
       "syncResult": "RDS sync: {created} created, {updated} updated",
       "syncUnmapped": "unrecognized company codes: {codes}",
-      "linkHris": "Link holders with HRIS",
-      "linkingHris": "Linking...",
-      "linkHrisResult": "HRIS holder linking: {linked} linked, {unmatched} left as text (no unambiguous match)"
+      "backfillHolders": "Link holders to HRIS",
+      "backfilling": "Linking...",
+      "backfillResult": "Linked {linked} of {scanned} unlinked holder(s) to an HRIS account; {unresolved} still unmatched (name missing, not found, or ambiguous)."
     },
     "toolbar": {
       "filter": "Filters",
@@ -158,6 +158,7 @@
     "category": "Category",
     "department": "Department",
     "holder": "Holder",
+    "holderPlaceholder": "Search HRIS employee by name / email…",
     "location": "Location",
     "manufacturer": "Manufacturer",
     "originalCost": "Original cost (VND)",

@@ -97,7 +97,11 @@
                 </div>
                 <div>
                   <label class="block text-xs text-gray-500 mb-1">{{ $t('assets.columns.holder') }}</label>
-                  <input v-model="editForm.holder" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                  <HolderPicker
+                    v-model:holder="editForm.holder"
+                    v-model:holderEmail="editForm.holder_email"
+                    :placeholder="$t('createAsset.holderPlaceholder')"
+                  />
                 </div>
               </div>
               <div>
@@ -294,6 +298,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import HolderPicker from '@/components/HolderPicker.vue'
 import { useAssetsStore } from '@/stores/assets'
 import { useAuthStore } from '@/stores/auth'
 import { useCompaniesStore } from '@/stores/companies'
@@ -369,6 +374,7 @@ function startEdit() {
     manufacturer: asset.value.manufacturer,
     department: asset.value.department,
     holder: asset.value.holder,
+    holder_email: asset.value.holder_email || '',
     location: asset.value.location,
     status: asset.value.status,
     original_cost: asset.value.original_cost,

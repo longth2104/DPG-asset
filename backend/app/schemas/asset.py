@@ -19,6 +19,10 @@ class AssetCreate(BaseModel):
     legal_entity: str = "Đạt Phương"
     department: str | None = None
     holder: str | None = None
+    # Not an Asset column — email of the HRIS employee picked as holder in the
+    # form. Resolved server-side to holder_user_id (auto-provisioning the
+    # account from HRIS), same as the Excel import's holder_email column.
+    holder_email: str | None = None
     location: str | None = None
     status: str = "dang_su_dung"
     domain: str = "b"
@@ -49,6 +53,9 @@ class AssetUpdate(BaseModel):
     legal_entity: str | None = None
     department: str | None = None
     holder: str | None = None
+    # See AssetCreate.holder_email. On update, sending this (even empty) re-links
+    # or clears holder_user_id; omitting it leaves the current link untouched.
+    holder_email: str | None = None
     location: str | None = None
     status: str | None = None
     domain: str | None = None
@@ -124,11 +131,6 @@ class AssetSyncResult(BaseModel):
     created: int
     updated: int
     unmapped_companies: list[str] = []
-
-
-class AssetHrisLinkResult(BaseModel):
-    linked: int
-    unmatched: int
 
 
 class AssetOut(AssetListItem):

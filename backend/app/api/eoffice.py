@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,20 +38,33 @@ async def _existing_by_ref(db: AsyncSession, external_ref: str | None) -> Reques
 async def list_assets_for_eoffice(
     limit: int = Query(1000, le=5000),
     offset: int = Query(0),
-    # Filter to assets currently held by one employee — either identifier
-    # works alone; passing both requires a match on both.
+    # Filter to assets currently held by one employee. `holder_email` /
+    # `holder_emp_code` match the LINKED account (Asset.holder_user_id) —
+    # passing both requires a match on both. `holder_name` matches the
+    # free-text holder (Asset.holder), which is how most imported rows carry
+    # the holder since they were never linked to an account. When both an
+    # account identifier and a name are given they are OR-ed: an asset held
+    # by this person, matched EITHER by linked account OR by holder name —
+    # so e-office (which knows the employee's email and full name) gets the
+    # rows regardless of which way AMS happens to record the holder.
     holder_email: str | None = Query(None),
     holder_emp_code: str | None = Query(None),
+    holder_name: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     stmt = select(Asset)
+    conds = []
     if holder_email or holder_emp_code:
         holder_ids_stmt = select(User.id)
         if holder_email:
             holder_ids_stmt = holder_ids_stmt.where(User.email.ilike(holder_email.strip()))
         if holder_emp_code:
             holder_ids_stmt = holder_ids_stmt.where(User.hris_emp_code == holder_emp_code.strip())
-        stmt = stmt.where(Asset.holder_user_id.in_(holder_ids_stmt))
+        conds.append(Asset.holder_user_id.in_(holder_ids_stmt))
+    if holder_name and holder_name.strip():
+        conds.append(Asset.holder.ilike(holder_name.strip()))
+    if conds:
+        stmt = stmt.where(or_(*conds))
     stmt = stmt.order_by(Asset.asset_code).limit(limit).offset(offset)
     result = await db.execute(stmt)
     assets = result.scalars().all()
@@ -83,6 +96,7 @@ async def list_assets_for_eoffice(
                 company_code=company.code if company else None,
                 holder_email=holder.email if holder else None,
                 holder_name=holder.full_name if holder else None,
+                holder=a.holder,
             )
         )
     return out

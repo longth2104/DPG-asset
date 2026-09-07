@@ -118,9 +118,9 @@
       "syncing": "Đang đồng bộ...",
       "syncResult": "Đồng bộ RDS: {created} tạo mới, {updated} cập nhật",
       "syncUnmapped": "mã công ty chưa xác định: {codes}",
-      "linkHris": "Liên kết người giữ với HRIS",
-      "linkingHris": "Đang liên kết...",
-      "linkHrisResult": "Liên kết HRIS: {linked} đã liên kết, {unmatched} vẫn để dạng chữ (không khớp rõ ràng)"
+      "backfillHolders": "Liên kết người giữ với HRIS",
+      "backfilling": "Đang liên kết...",
+      "backfillResult": "Đã liên kết {linked}/{scanned} người giữ với tài khoản HRIS; còn {unresolved} chưa khớp (thiếu tên, không tìm thấy, hoặc trùng tên)."
     },
     "toolbar": {
       "filter": "Bộ lọc",
@@ -158,6 +158,7 @@
     "category": "Nhóm thiết bị",
     "department": "Phòng ban sử dụng",
     "holder": "Người sử dụng",
+    "holderPlaceholder": "Tìm nhân viên HRIS theo tên / email…",
     "location": "Vị trí",
     "manufacturer": "Hãng sản xuất",
     "originalCost": "Nguyên giá (VNĐ)",
