@@ -216,6 +216,12 @@
                   </select>
                 </div>
               </template>
+              <div v-if="form.scope === 'project'">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  {{ $t('requests.fields.project') }}
+                </label>
+                <input v-model="form.project" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
               <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                   {{ $t('requests.fields.toLocation') }}
@@ -245,6 +251,12 @@
                   <option v-for="d in toDeptOptions" :key="d.dept_code" :value="d.dept_name">{{ d.dept_name }}</option>
                 </select>
               </div>
+            </div>
+            <div v-if="form.scope === 'project'" class="mb-4">
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                {{ $t('requests.fields.project') }}
+              </label>
+              <input v-model="form.project" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -311,7 +323,7 @@ const submitting = ref(false)
 const error = ref('')
 
 const SCOPE_OPTIONS_BY_TYPE = {
-  transfer: ['individual', 'department', 'branch'],
+  transfer: ['individual', 'department', 'branch', 'project'],
   acquire: ['individual', 'department', 'branch', 'project'],
 }
 const scopeOptions = computed(() => SCOPE_OPTIONS_BY_TYPE[type.value] || [])
@@ -323,6 +335,7 @@ function blankForm() {
     scope: scopeOptions.value[0] || null,
     to_department: '',
     to_location: '',
+    project: '',
     to_contact_name: '',
     to_contact_title: '',
     to_contact_phone: '',
@@ -471,6 +484,7 @@ async function submit() {
 
     if (type.value === 'transfer' || type.value === 'acquire') {
       payload.scope = form.scope
+      if (form.scope === 'project') payload.project = form.project || null
     }
 
     if (type.value === 'transfer') {

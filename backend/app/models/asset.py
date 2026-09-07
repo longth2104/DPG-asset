@@ -42,11 +42,18 @@ class Asset(Base):
     serial_number: Mapped[str | None] = mapped_column(String, nullable=True)
     manufacturer: Mapped[str | None] = mapped_column(String, nullable=True)
     manufacture_year: Mapped[int | None] = mapped_column(nullable=True)
+    # Distinct from year_put_in_use (when it started being used) — an asset
+    # can be bought well before it's actually deployed.
+    purchase_date: Mapped[date | None] = mapped_column(nullable=True)
     year_put_in_use: Mapped[date | None] = mapped_column(nullable=True)
     original_cost: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
     warranty_months: Mapped[int | None] = mapped_column(nullable=True)
     legal_entity: Mapped[str] = mapped_column(String, nullable=False, default="Đạt Phương")
     department: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # Free-text — which project this asset is allocated to, when ownership is
+    # tracked by project rather than by department/individual (transfer/
+    # acquire's "project" scope already existed with nothing to name it).
+    project: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     holder: Mapped[str | None] = mapped_column(String, nullable=True)
     # Nullable link to a real account. Excel import tries to resolve this at
     # import time — reliably via a holder_email column, or (best-effort) by

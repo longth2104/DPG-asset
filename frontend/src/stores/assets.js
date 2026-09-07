@@ -65,18 +65,40 @@ export const useAssetsStore = defineStore('assets', () => {
     return data
   }
 
-  async function uploadDocument(id, file) {
+  async function uploadDocument(id, file, maintenanceRecordId = null) {
     const form = new FormData()
     form.append('file', file)
+    if (maintenanceRecordId) form.append('maintenance_record_id', maintenanceRecordId)
     const { data } = await api.post(`/api/assets/${id}/documents`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    if (currentAsset.value?.id === id) currentAsset.value.documents.unshift(data)
+    if (currentAsset.value?.id === id) {
+      if (maintenanceRecordId) {
+        // Also lives nested under its maintenance record — refetch rather
+        // than hand-patch two places in the cached asset.
+        await fetchAsset(id)
+      } else {
+        currentAsset.value.documents.unshift(data)
+      }
+    }
+    return data
+  }
+
+  async function createMaintenanceRecord(id, payload) {
+    const { data } = await api.post(`/api/assets/${id}/maintenance`, payload)
+    if (currentAsset.value?.id === id) await fetchAsset(id)
+    return data
+  }
+
+  async function resolveMaintenanceRecord(id, recordId) {
+    const { data } = await api.patch(`/api/assets/${id}/maintenance/${recordId}`, { resolve: true })
+    if (currentAsset.value?.id === id) await fetchAsset(id)
     return data
   }
 
   return {
     assets, currentAsset, myAssets, loading, error,
     fetchAssets, fetchAsset, fetchMine, createAsset, updateAsset, addEvent, uploadDocument,
+    createMaintenanceRecord, resolveMaintenanceRecord,
   }
 })

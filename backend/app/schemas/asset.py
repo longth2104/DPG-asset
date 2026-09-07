@@ -3,6 +3,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel
 
+from app.schemas.asset_maintenance import AssetMaintenanceRecordOut
 from app.schemas.document import DocumentOut
 
 
@@ -13,11 +14,13 @@ class AssetCreate(BaseModel):
     serial_number: str | None = None
     manufacturer: str | None = None
     manufacture_year: int | None = None
+    purchase_date: date | None = None
     year_put_in_use: date | None = None
     original_cost: float | None = None
     warranty_months: int | None = None
     legal_entity: str = "Đạt Phương"
     department: str | None = None
+    project: str | None = None
     holder: str | None = None
     # Not an Asset column — email of the HRIS employee picked as holder in the
     # form. Resolved server-side to holder_user_id (auto-provisioning the
@@ -47,11 +50,13 @@ class AssetUpdate(BaseModel):
     serial_number: str | None = None
     manufacturer: str | None = None
     manufacture_year: int | None = None
+    purchase_date: date | None = None
     year_put_in_use: date | None = None
     original_cost: float | None = None
     warranty_months: int | None = None
     legal_entity: str | None = None
     department: str | None = None
+    project: str | None = None
     holder: str | None = None
     # See AssetCreate.holder_email. On update, sending this (even empty) re-links
     # or clears holder_user_id; omitting it leaves the current link untouched.
@@ -138,10 +143,12 @@ class AssetOut(AssetListItem):
     serial_number: str | None = None
     manufacturer: str | None = None
     manufacture_year: int | None = None
+    purchase_date: date | None = None
     year_put_in_use: date | None = None
     original_cost: float | None = None
     warranty_months: int | None = None
     legal_entity: str
+    project: str | None = None
     budget_plan_year: int | None = None
     budget_actual_year: int | None = None
     replacement_priority: str | None = None
@@ -155,3 +162,4 @@ class AssetOut(AssetListItem):
     updated_at: datetime
     events: list[AssetEventOut] = []
     documents: list[DocumentOut] = []
+    maintenance_records: list[AssetMaintenanceRecordOut] = []

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -16,6 +17,7 @@ from app.api.upload import MAX_UPLOAD_BYTES, store_object
 from app.core.database import get_db
 from app.models.asset import Asset
 from app.models.asset_event import AssetEvent
+from app.models.asset_maintenance import AssetMaintenanceRecord
 from app.models.company import Company
 from app.models.document import Document
 from app.models.request import Request, RequestItem
@@ -32,6 +34,11 @@ from app.schemas.asset import (
     AssetOut,
     AssetSyncResult,
     AssetUpdate,
+)
+from app.schemas.asset_maintenance import (
+    AssetMaintenanceRecordCreate,
+    AssetMaintenanceRecordOut,
+    AssetMaintenanceRecordUpdate,
 )
 from app.schemas.document import DocumentOut
 from app.services.excel import build_asset_xlsx, parse_asset_xlsx
@@ -455,6 +462,12 @@ async def get_asset(
     company_path: str | None = Depends(get_scope_company_path),
 ):
     asset = await _get_asset_or_404(db, asset_id, company_path)
+    # If this asset was just mutated elsewhere in the same session (e.g. a
+    # request's _apply_effect) without a refresh, server-computed columns
+    # like updated_at are left expired — a bare attribute access on those
+    # below would try to lazy-load outside the async greenlet and crash.
+    # Safe no-op when the object is already fresh.
+    await db.refresh(asset)
 
     events = (
         (
@@ -479,6 +492,28 @@ async def get_asset(
         .all()
     )
 
+    maintenance_records = (
+        (
+            await db.execute(
+                select(AssetMaintenanceRecord)
+                .where(AssetMaintenanceRecord.asset_id == asset_id)
+                .order_by(AssetMaintenanceRecord.reported_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    maintenance_docs_by_record: dict[uuid.UUID, list[Document]] = {}
+    maintenance_ids = [m.id for m in maintenance_records]
+    if maintenance_ids:
+        result = await db.execute(
+            select(Document)
+            .where(Document.maintenance_record_id.in_(maintenance_ids))
+            .order_by(Document.created_at.desc())
+        )
+        for d in result.scalars().all():
+            maintenance_docs_by_record.setdefault(d.maintenance_record_id, []).append(d)
+
     holder_email = None
     if asset.holder_user_id:
         holder = await db.get(User, asset.holder_user_id)
@@ -491,10 +526,12 @@ async def get_asset(
         serial_number=asset.serial_number,
         manufacturer=asset.manufacturer,
         manufacture_year=asset.manufacture_year,
+        purchase_date=asset.purchase_date,
         year_put_in_use=asset.year_put_in_use,
         original_cost=float(asset.original_cost) if asset.original_cost is not None else None,
         warranty_months=asset.warranty_months,
         legal_entity=asset.legal_entity,
+        project=asset.project,
         budget_plan_year=asset.budget_plan_year,
         budget_actual_year=asset.budget_actual_year,
         replacement_priority=asset.replacement_priority,
@@ -505,6 +542,13 @@ async def get_asset(
         updated_at=asset.updated_at,
         events=[AssetEventOut.model_validate(e) for e in events],
         documents=[DocumentOut.model_validate(d) for d in documents],
+        maintenance_records=[
+            AssetMaintenanceRecordOut(
+                **AssetMaintenanceRecordOut.model_validate(m).model_dump(exclude={"documents"}),
+                documents=[DocumentOut.model_validate(d) for d in maintenance_docs_by_record.get(m.id, [])],
+            )
+            for m in maintenance_records
+        ],
     )
 
 
@@ -589,6 +633,89 @@ async def update_asset(
     return asset
 
 
+@router.post(
+    "/{asset_id}/maintenance",
+    response_model=AssetMaintenanceRecordOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_maintenance_record(
+    asset_id: uuid.UUID,
+    body: AssetMaintenanceRecordCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_asset_manager),
+    company_path: str | None = Depends(get_scope_company_path),
+):
+    """Reports an asset as broken/under repair — per docs/cycle.md's
+    maintenance log (when, where, cost, condition, documents). Flips the
+    asset to "dang_sua_chua" only when it was actually in use, so this can't
+    clobber a more terminal status (liquidated, reallocated) set in the
+    meantime."""
+    asset = await _get_asset_or_404(db, asset_id, company_path)
+    record = AssetMaintenanceRecord(
+        asset_id=asset_id,
+        status="reported",
+        location=body.location,
+        cost=body.cost,
+        condition_note=body.condition_note,
+        created_by=user.id,
+    )
+    db.add(record)
+    if asset.status == "dang_su_dung":
+        asset.status = "dang_sua_chua"
+    await _log_event(db, asset_id, user.id, "status_change", "Báo hỏng / đưa vào sửa chữa")
+    await db.commit()
+    await db.refresh(record)
+    return AssetMaintenanceRecordOut(
+        **AssetMaintenanceRecordOut.model_validate(record).model_dump(exclude={"documents"}), documents=[]
+    )
+
+
+@router.patch("/{asset_id}/maintenance/{record_id}", response_model=AssetMaintenanceRecordOut)
+async def update_maintenance_record(
+    asset_id: uuid.UUID,
+    record_id: uuid.UUID,
+    body: AssetMaintenanceRecordUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_asset_manager),
+    company_path: str | None = Depends(get_scope_company_path),
+):
+    asset = await _get_asset_or_404(db, asset_id, company_path)
+    record = await db.get(AssetMaintenanceRecord, record_id)
+    if not record or record.asset_id != asset_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Maintenance record not found")
+
+    changes = body.model_dump(exclude_unset=True, exclude={"resolve"})
+    for field, value in changes.items():
+        setattr(record, field, value)
+
+    if body.resolve and not record.resolved_at:
+        record.resolved_at = datetime.now(timezone.utc)
+        record.status = "resolved"
+        # Only reverts the asset if nothing else moved it on in the meantime
+        # (e.g. a transfer/liquidation while under repair).
+        if asset.status == "dang_sua_chua":
+            asset.status = "dang_su_dung"
+        await _log_event(db, asset_id, user.id, "status_change", "Sửa chữa hoàn tất")
+
+    await db.commit()
+    await db.refresh(record)
+    documents = (
+        (
+            await db.execute(
+                select(Document)
+                .where(Document.maintenance_record_id == record_id)
+                .order_by(Document.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return AssetMaintenanceRecordOut(
+        **AssetMaintenanceRecordOut.model_validate(record).model_dump(exclude={"documents"}),
+        documents=[DocumentOut.model_validate(d) for d in documents],
+    )
+
+
 @router.post("/{asset_id}/events", response_model=AssetEventOut, status_code=status.HTTP_201_CREATED)
 async def add_note_event(
     asset_id: uuid.UUID,
@@ -611,11 +738,19 @@ async def add_note_event(
 async def upload_document(
     asset_id: uuid.UUID,
     file: UploadFile = File(...),
+    # Set when uploading a receipt/report against a specific maintenance
+    # record rather than the asset generally (see AssetMaintenanceRecordOut).
+    maintenance_record_id: uuid.UUID | None = Form(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_asset_manager),
     company_path: str | None = Depends(get_scope_company_path),
 ):
     await _get_asset_or_404(db, asset_id, company_path)
+
+    if maintenance_record_id:
+        record = await db.get(AssetMaintenanceRecord, maintenance_record_id)
+        if not record or record.asset_id != asset_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Maintenance record not found")
 
     content = await file.read()
     if len(content) > MAX_UPLOAD_BYTES:
@@ -630,6 +765,7 @@ async def upload_document(
         size_bytes=len(content),
         uploaded_by=user.id,
         asset_id=asset_id,
+        maintenance_record_id=maintenance_record_id,
     )
     db.add(document)
     await _log_event(db, asset_id, user.id, "note", f"Tải lên tài liệu: {document.filename}")

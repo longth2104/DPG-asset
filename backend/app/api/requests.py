@@ -191,6 +191,7 @@ def _to_out(req: Request, items: list[RequestItem], signatures: list[RequestSign
         to_department=req.to_department,
         from_location=req.from_location,
         to_location=req.to_location,
+        project=req.project,
         to_contact_name=req.to_contact_name,
         to_contact_title=req.to_contact_title,
         to_contact_phone=req.to_contact_phone,
@@ -265,6 +266,7 @@ async def _build_request(
         to_department=body.to_department,
         from_location=body.from_location,
         to_location=body.to_location,
+        project=body.project,
         to_contact_name=body.to_contact_name,
         to_contact_title=body.to_contact_title,
         to_contact_phone=body.to_contact_phone,
@@ -431,6 +433,8 @@ async def _apply_effect(
             asset.holder_user_id = req.to_holder_user_id
             asset.department = req.to_department or asset.department
             asset.location = req.to_location or asset.location
+            if req.scope == "project":
+                asset.project = req.project
             asset.status = "da_dieu_dong"
             db.add(
                 AssetEvent(
@@ -475,6 +479,7 @@ async def _apply_effect(
                 company_id=requester.company_id if requester else None,
                 domain="b",
                 department=req.to_department,
+                project=req.project if req.scope == "project" else None,
                 holder_user_id=req.to_holder_user_id,
                 created_by=actor.id,
                 notes=(

@@ -62,6 +62,21 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              {{ $t('createAsset.purchaseDate') }}
+            </label>
+            <input v-model="form.purchase_date" type="date" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              {{ $t('createAsset.project') }}
+            </label>
+            <input v-model="form.project" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
         <div>
           <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
             {{ $t('createAsset.company') }}
@@ -138,6 +153,8 @@ const form = ref({
   holder_email: '',
   location: '',
   original_cost: null,
+  purchase_date: '',
+  project: '',
   company_id: auth.user?.company_id || '',
 })
 const customFields = ref([])
@@ -161,7 +178,7 @@ async function submit() {
     for (const f of customFields.value) {
       if (f.key.trim()) extra_fields[f.key.trim()] = f.value
     }
-    const payload = { ...form.value }
+    const payload = { ...form.value, purchase_date: form.value.purchase_date || null }
     if (Object.keys(extra_fields).length) payload.extra_fields = extra_fields
     const asset = await store.createAsset(payload)
     router.push(`/assets/${asset.id}`)

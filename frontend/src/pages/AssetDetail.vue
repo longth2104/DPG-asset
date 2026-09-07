@@ -130,6 +130,16 @@
                   <input v-model.number="editForm.warranty_months" type="number" min="0" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
                 </div>
               </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('createAsset.purchaseDate') }}</label>
+                  <input v-model="editForm.purchase_date" type="date" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">{{ $t('createAsset.project') }}</label>
+                  <input v-model="editForm.project" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                </div>
+              </div>
               <div>
                 <label class="block text-xs text-gray-500 mb-1">{{ $t('assetDetail.notes') }}</label>
                 <textarea v-model="editForm.notes" rows="2" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
@@ -227,6 +237,14 @@
                 <dt class="text-gray-500">{{ $t('assetDetail.purchaseSource') }}</dt>
                 <dd>{{ asset.purchase_source || '—' }}</dd>
               </div>
+              <div class="grid grid-cols-2 gap-2">
+                <dt class="text-gray-500">{{ $t('createAsset.purchaseDate') }}</dt>
+                <dd>{{ asset.purchase_date || '—' }}</dd>
+              </div>
+              <div v-if="asset.project" class="grid grid-cols-2 gap-2">
+                <dt class="text-gray-500">{{ $t('createAsset.project') }}</dt>
+                <dd>{{ asset.project }}</dd>
+              </div>
               <div v-if="asset.notes" class="grid grid-cols-2 gap-2">
                 <dt class="text-gray-500">{{ $t('assetDetail.notes') }}</dt>
                 <dd class="break-words">{{ asset.notes }}</dd>
@@ -261,6 +279,98 @@
 
           <!-- History -->
           <div class="bg-white text-gray-900 rounded p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500">
+                {{ $t('assetDetail.maintenance') }}
+              </h2>
+              <button
+                v-if="auth.isAssetManager && !reportingIssue"
+                @click="reportingIssue = true"
+                class="text-xs font-semibold text-primary hover:underline"
+              >
+                + {{ $t('assetDetail.reportIssue') }}
+              </button>
+            </div>
+
+            <form v-if="reportingIssue" @submit.prevent="submitMaintenance" class="space-y-2 mb-5 border border-gray-200 rounded p-3">
+              <input
+                v-model="maintenanceForm.location"
+                :placeholder="$t('assetDetail.maintenanceLocation')"
+                class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+              />
+              <input
+                v-model.number="maintenanceForm.cost"
+                type="number"
+                min="0"
+                :placeholder="$t('assetDetail.maintenanceCost')"
+                class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+              />
+              <textarea
+                v-model="maintenanceForm.condition_note"
+                rows="2"
+                :placeholder="$t('assetDetail.maintenanceCondition')"
+                class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+              />
+              <p v-if="maintenanceError" class="text-red-600 text-xs">{{ $t(maintenanceError) }}</p>
+              <div class="flex gap-2">
+                <button
+                  type="submit"
+                  :disabled="submittingMaintenance"
+                  class="bg-primary hover:bg-primary-hover disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+                >
+                  {{ $t('assetDetail.reportIssue') }}
+                </button>
+                <button
+                  type="button"
+                  @click="reportingIssue = false"
+                  class="border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+                >
+                  {{ $t('common.cancel') }}
+                </button>
+              </div>
+            </form>
+
+            <ul class="space-y-3 text-sm mb-5">
+              <li v-for="m in asset.maintenance_records" :key="m.id" class="border border-gray-200 rounded p-3">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <span
+                    class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+                    :class="m.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+                  >
+                    {{ $t(`assetDetail.maintenanceStatus.${m.status}`) }}
+                  </span>
+                  <button
+                    v-if="auth.isAssetManager && m.status !== 'resolved'"
+                    @click="resolveMaintenance(m.id)"
+                    class="text-xs font-semibold text-primary hover:underline"
+                  >
+                    {{ $t('assetDetail.markResolved') }}
+                  </button>
+                </div>
+                <p class="text-xs text-gray-400">
+                  {{ $t('assetDetail.reportedAt') }}: {{ new Date(m.reported_at).toLocaleString() }}
+                  <template v-if="m.resolved_at"> · {{ $t('assetDetail.resolvedAt') }}: {{ new Date(m.resolved_at).toLocaleString() }}</template>
+                </p>
+                <p v-if="m.location">{{ $t('assetDetail.maintenanceLocation') }}: {{ m.location }}</p>
+                <p v-if="m.cost != null">{{ $t('assetDetail.maintenanceCost') }}: {{ formatCurrency(m.cost) }}</p>
+                <p v-if="m.condition_note" class="break-words">{{ m.condition_note }}</p>
+                <ul class="mt-1 space-y-0.5">
+                  <li v-for="d in m.documents" :key="d.id">
+                    <a :href="`/api/upload/files/${d.file_url}`" target="_blank" class="text-primary text-xs hover:underline">
+                      {{ d.filename }}
+                    </a>
+                  </li>
+                </ul>
+                <input
+                  v-if="auth.isAssetManager"
+                  type="file"
+                  @change="(e) => onMaintenanceFilePick(e, m.id)"
+                  class="text-xs mt-1"
+                />
+              </li>
+              <li v-if="!asset.maintenance_records.length" class="text-gray-400">{{ $t('common.noResults') }}</li>
+            </ul>
+
             <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">
               {{ $t('assetDetail.history') }}
             </h2>
@@ -359,6 +469,36 @@ async function onFilePick(e) {
   e.target.value = ''
 }
 
+const reportingIssue = ref(false)
+const submittingMaintenance = ref(false)
+const maintenanceError = ref('')
+const maintenanceForm = reactive({ location: '', cost: null, condition_note: '' })
+
+async function submitMaintenance() {
+  submittingMaintenance.value = true
+  maintenanceError.value = ''
+  try {
+    await store.createMaintenanceRecord(route.params.id, { ...maintenanceForm })
+    Object.assign(maintenanceForm, { location: '', cost: null, condition_note: '' })
+    reportingIssue.value = false
+  } catch (e) {
+    maintenanceError.value = e.response?.data?.detail ?? 'common.genericError'
+  } finally {
+    submittingMaintenance.value = false
+  }
+}
+
+async function resolveMaintenance(recordId) {
+  await store.resolveMaintenanceRecord(route.params.id, recordId)
+}
+
+async function onMaintenanceFilePick(e, recordId) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  await store.uploadDocument(route.params.id, file, recordId)
+  e.target.value = ''
+}
+
 async function printDossier() {
   const { data } = await api.get(`/api/assets/${route.params.id}/pdf`, { responseType: 'blob' })
   openBlobInNewTab(data)
@@ -380,6 +520,8 @@ function startEdit() {
     original_cost: asset.value.original_cost,
     warranty_months: asset.value.warranty_months,
     purchase_source: asset.value.purchase_source,
+    purchase_date: asset.value.purchase_date || '',
+    project: asset.value.project || '',
     notes: asset.value.notes,
     company_id: asset.value.company_id,
   })
@@ -401,7 +543,11 @@ async function saveEdit() {
     for (const f of editCustomFields.value) {
       if (f.key.trim()) extra_fields[f.key.trim()] = f.value
     }
-    await store.updateAsset(route.params.id, { ...editForm, extra_fields })
+    await store.updateAsset(route.params.id, {
+      ...editForm,
+      purchase_date: editForm.purchase_date || null,
+      extra_fields,
+    })
     editing.value = false
   } catch (e) {
     editError.value = e.response?.data?.detail ?? 'common.genericError'

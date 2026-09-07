@@ -83,6 +83,8 @@ class RequestCreate(BaseModel):
     to_department: str | None = None
     from_location: str | None = None
     to_location: str | None = None
+    # Named project — only meaningful when scope="project".
+    project: str | None = None
     to_contact_name: str | None = None
     to_contact_title: str | None = None
     to_contact_phone: str | None = None
@@ -142,6 +144,7 @@ class RequestOut(RequestListItem):
     to_department: str | None = None
     from_location: str | None = None
     to_location: str | None = None
+    project: str | None = None
     to_contact_name: str | None = None
     to_contact_title: str | None = None
     to_contact_phone: str | None = None

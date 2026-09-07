@@ -64,6 +64,9 @@ class Request(Base):
     to_department: Mapped[str | None] = mapped_column(String, nullable=True)
     from_location: Mapped[str | None] = mapped_column(String, nullable=True)
     to_location: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Named project, only meaningful when scope="project" — distinct from
+    # to_department since a project isn't a department/branch name.
+    project: Mapped[str | None] = mapped_column(String, nullable=True)
     # Bên B identity block for a handover recipient without a User account
     # (e.g. a department/branch contact) — matches the real Biên bản bàn
     # giao's identity fields (name/title/phone/email/CCCD).
