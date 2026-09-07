@@ -55,6 +55,7 @@
     "cancel": "Cancel",
     "create": "Create",
     "search": "Search",
+    "delete": "Delete",
     "genericError": "Something went wrong, please try again",
     "noResults": "No data"
   },
@@ -116,7 +117,15 @@
       "syncRds": "Sync from RDS",
       "syncing": "Syncing...",
       "syncResult": "RDS sync: {created} created, {updated} updated",
-      "syncUnmapped": "unrecognized company codes: {codes}"
+      "syncUnmapped": "unrecognized company codes: {codes}",
+      "linkHris": "Link holders with HRIS",
+      "linkingHris": "Linking...",
+      "linkHrisResult": "HRIS holder linking: {linked} linked, {unmatched} left as text (no unambiguous match)"
+    },
+    "toolbar": {
+      "filter": "Filters",
+      "edit": "Export / import / delete",
+      "update": "Sync / data updates"
     }
   },
   "assetDetail": {

@@ -126,6 +126,11 @@ class AssetSyncResult(BaseModel):
     unmapped_companies: list[str] = []
 
 
+class AssetHrisLinkResult(BaseModel):
+    linked: int
+    unmatched: int
+
+
 class AssetOut(AssetListItem):
     spec: str | None = None
     serial_number: str | None = None

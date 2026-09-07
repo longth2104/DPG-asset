@@ -14,93 +14,164 @@
         </router-link>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
+      <div class="flex items-center gap-3 mb-6">
         <input
           v-model="search"
           :placeholder="$t('assets.search')"
           :title="$t('assets.searchHint')"
-          class="lg:col-span-2 bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded focus:outline-none focus:border-primary"
+          class="flex-1 bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded focus:outline-none focus:border-primary"
         />
-        <select v-model="departmentFilter" class="bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded">
-          <option value="">{{ $t('assets.filters.department') }} — {{ $t('assets.filters.all') }}</option>
-          <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
-        </select>
-        <select v-model="categoryFilter" class="bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded">
-          <option value="">{{ $t('assets.filters.category') }} — {{ $t('assets.filters.all') }}</option>
-          <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-        </select>
-        <select v-model="statusFilter" class="bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded">
-          <option value="">{{ $t('assets.filters.status') }} — {{ $t('assets.filters.all') }}</option>
-          <option v-for="s in statuses" :key="s" :value="s">{{ $t(`assets.status.${s}`) }}</option>
-        </select>
-        <select v-model="companyFilter" class="bg-white text-gray-900 border border-gray-200 px-3 py-2 text-sm rounded">
-          <option value="">{{ $t('assets.columns.company') }} — {{ $t('assets.filters.all') }}</option>
-          <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
-        </select>
+
+        <!-- Filter icon: department/category/status/company -->
+        <div class="relative flex-shrink-0" ref="filterBoxRef">
+          <button
+            @click="filterPanelOpen = !filterPanelOpen"
+            :title="$t('assets.toolbar.filter')"
+            class="relative flex items-center justify-center w-10 h-10 bg-white text-gray-700 hover:bg-gray-100 rounded transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18l-7 8v6l-4 2v-8L3 4z" />
+            </svg>
+            <span v-if="activeFilterCount" class="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold rounded-full bg-red-500 text-white">
+              {{ activeFilterCount }}
+            </span>
+          </button>
+          <Transition name="dropdown">
+            <div
+              v-if="filterPanelOpen"
+              class="absolute z-20 top-full right-0 mt-1.5 w-72 bg-white border border-gray-200 rounded-lg shadow-2xl p-3 space-y-2"
+            >
+              <select v-model="departmentFilter" class="w-full border border-gray-200 px-3 py-2 text-sm rounded text-gray-900">
+                <option value="">{{ $t('assets.filters.department') }} — {{ $t('assets.filters.all') }}</option>
+                <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
+              </select>
+              <select v-model="categoryFilter" class="w-full border border-gray-200 px-3 py-2 text-sm rounded text-gray-900">
+                <option value="">{{ $t('assets.filters.category') }} — {{ $t('assets.filters.all') }}</option>
+                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+              </select>
+              <select v-model="statusFilter" class="w-full border border-gray-200 px-3 py-2 text-sm rounded text-gray-900">
+                <option value="">{{ $t('assets.filters.status') }} — {{ $t('assets.filters.all') }}</option>
+                <option v-for="s in statuses" :key="s" :value="s">{{ $t(`assets.status.${s}`) }}</option>
+              </select>
+              <select v-model="companyFilter" class="w-full border border-gray-200 px-3 py-2 text-sm rounded text-gray-900">
+                <option value="">{{ $t('assets.columns.company') }} — {{ $t('assets.filters.all') }}</option>
+                <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
+              </select>
+            </div>
+          </Transition>
+        </div>
+
+        <!-- Edit icon: export / import / delete -->
+        <div v-if="auth.isAssetManager" class="relative flex-shrink-0" ref="editBoxRef">
+          <button
+            @click="editPanelOpen = !editPanelOpen"
+            :title="$t('assets.toolbar.edit')"
+            class="flex items-center justify-center w-10 h-10 bg-white text-gray-700 hover:bg-gray-100 rounded transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <Transition name="dropdown">
+            <div
+              v-if="editPanelOpen"
+              class="absolute z-20 top-full right-0 mt-1.5 w-72 bg-white border border-gray-200 rounded-lg shadow-2xl p-3 space-y-3 text-gray-900"
+            >
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{{ $t('assets.io.exportExcel') }} / PDF</p>
+                <div class="flex gap-2">
+                  <button
+                    @click="exportAssets('xlsx')"
+                    :disabled="exporting"
+                    class="flex-1 border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+                  >
+                    {{ $t('assets.io.exportExcel') }}
+                  </button>
+                  <button
+                    @click="exportAssets('pdf')"
+                    :disabled="exporting"
+                    class="flex-1 border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+                  >
+                    {{ $t('assets.io.exportPdf') }}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{{ $t('assets.io.import') }}</p>
+                <select
+                  v-model="importDefaultCompanyId"
+                  :title="$t('assets.io.importDefaultCompanyHint')"
+                  class="w-full border border-gray-200 px-3 py-2 text-sm rounded mb-2"
+                >
+                  <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
+                </select>
+                <label class="block text-center border border-gray-200 hover:bg-gray-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer">
+                  {{ importing ? $t('assets.io.importing') : $t('assets.io.import') }}
+                  <input type="file" accept=".xlsx" class="hidden" :disabled="importing" @change="onImportPick" />
+                </label>
+              </div>
+
+              <div class="border-t border-gray-200 pt-3">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{{ $t('common.delete') }}</p>
+                <div class="flex flex-col gap-2">
+                  <button
+                    @click="deleteSelected"
+                    :disabled="!selectedIds.size || deleting"
+                    class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+                  >
+                    {{ $t('assets.io.deleteSelected') }}
+                  </button>
+                  <button
+                    @click="deleteAll"
+                    :disabled="!filtered.length || deleting"
+                    class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+                  >
+                    {{ $t('assets.io.deleteAll') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Transition>
+        </div>
+
+        <!-- Update icon: RDS sync / HRIS holder linking -->
+        <div v-if="auth.isAdmin" class="relative flex-shrink-0" ref="updateBoxRef">
+          <button
+            @click="updatePanelOpen = !updatePanelOpen"
+            :title="$t('assets.toolbar.update')"
+            class="flex items-center justify-center w-10 h-10 bg-white text-gray-700 hover:bg-gray-100 rounded transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <Transition name="dropdown">
+            <div
+              v-if="updatePanelOpen"
+              class="absolute z-20 top-full right-0 mt-1.5 w-64 bg-white border border-gray-200 rounded-lg shadow-2xl p-3 flex flex-col gap-2 text-gray-900"
+            >
+              <button
+                @click="syncRds"
+                :disabled="syncing"
+                class="border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+              >
+                {{ syncing ? $t('assets.io.syncing') : $t('assets.io.syncRds') }}
+              </button>
+              <button
+                @click="linkHoldersHris"
+                :disabled="linkingHris"
+                class="border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
+              >
+                {{ linkingHris ? $t('assets.io.linkingHris') : $t('assets.io.linkHris') }}
+              </button>
+            </div>
+          </Transition>
+        </div>
       </div>
 
-      <div class="flex items-center gap-2 mb-6 flex-wrap">
-        <span v-if="selectedIds.size" class="text-sm text-white/80 mr-1">
-          {{ $t('assets.io.selected', { count: selectedIds.size }) }}
-        </span>
-        <button
-          @click="exportAssets('xlsx')"
-          :disabled="exporting"
-          class="bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
-        >
-          {{ $t('assets.io.exportExcel') }}
-        </button>
-        <button
-          @click="exportAssets('pdf')"
-          :disabled="exporting"
-          class="bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
-        >
-          {{ $t('assets.io.exportPdf') }}
-        </button>
-        <select
-          v-if="auth.isAssetManager"
-          v-model="importDefaultCompanyId"
-          :title="$t('assets.io.importDefaultCompanyHint')"
-          class="bg-white text-gray-900 border border-gray-200 px-3 py-1.5 text-sm rounded"
-        >
-          <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">{{ c.code }} — {{ c.name }}</option>
-        </select>
-        <label
-          v-if="auth.isAssetManager"
-          class="bg-white text-gray-900 hover:bg-gray-100 text-sm font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer"
-        >
-          {{ importing ? $t('assets.io.importing') : $t('assets.io.import') }}
-          <input type="file" accept=".xlsx" class="hidden" :disabled="importing" @change="onImportPick" />
-        </label>
-
-        <template v-if="auth.isAssetManager">
-          <span class="w-px self-stretch bg-white/20 mx-1" />
-          <button
-            @click="deleteSelected"
-            :disabled="!selectedIds.size || deleting"
-            class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-3 py-1.5 rounded transition-colors"
-          >
-            {{ $t('assets.io.deleteSelected') }}
-          </button>
-          <button
-            @click="deleteAll"
-            :disabled="!filtered.length || deleting"
-            class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold px-3 py-1.5 rounded transition-colors"
-          >
-            {{ $t('assets.io.deleteAll') }}
-          </button>
-        </template>
-
-        <template v-if="auth.isAdmin">
-          <span class="w-px self-stretch bg-white/20 mx-1" />
-          <button
-            @click="syncRds"
-            :disabled="syncing"
-            class="bg-white text-gray-900 hover:bg-gray-100 disabled:opacity-50 text-sm font-semibold px-3 py-1.5 rounded transition-colors"
-          >
-            {{ syncing ? $t('assets.io.syncing') : $t('assets.io.syncRds') }}
-          </button>
-        </template>
+      <div v-if="selectedIds.size" class="text-sm text-white/80 mb-4">
+        {{ $t('assets.io.selected', { count: selectedIds.size }) }}
       </div>
 
       <div
@@ -121,6 +192,23 @@
       >
         <p class="text-red-600">{{ $t(syncError) }}</p>
         <button @click="syncError = ''" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+      </div>
+
+      <div
+        v-if="hrisLinkResult"
+        class="bg-white text-gray-900 border border-gray-200 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p>
+          {{ $t('assets.io.linkHrisResult', { linked: hrisLinkResult.linked, unmatched: hrisLinkResult.unmatched }) }}
+        </p>
+        <button @click="hrisLinkResult = null" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+      </div>
+      <div
+        v-if="hrisLinkError"
+        class="bg-white text-gray-900 border border-red-300 rounded p-4 mb-6 text-sm flex items-start justify-between gap-3"
+      >
+        <p class="text-red-600">{{ $t(hrisLinkError) }}</p>
+        <button @click="hrisLinkError = ''" class="text-gray-400 hover:text-gray-600 text-xs">✕</button>
       </div>
 
       <div
@@ -237,7 +325,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppHeader from '@/components/AppHeader.vue'
 import { useAssetsStore } from '@/stores/assets'
@@ -270,11 +358,29 @@ const deleteError = ref('')
 const syncing = ref(false)
 const syncResult = ref(null)
 const syncError = ref('')
+const linkingHris = ref(false)
+const hrisLinkResult = ref(null)
+const hrisLinkError = ref('')
+
+const filterPanelOpen = ref(false)
+const editPanelOpen = ref(false)
+const updatePanelOpen = ref(false)
+const filterBoxRef = ref(null)
+const editBoxRef = ref(null)
+const updateBoxRef = ref(null)
+
+function handleOutsideClick(e) {
+  if (filterBoxRef.value && !filterBoxRef.value.contains(e.target)) filterPanelOpen.value = false
+  if (editBoxRef.value && !editBoxRef.value.contains(e.target)) editPanelOpen.value = false
+  if (updateBoxRef.value && !updateBoxRef.value.contains(e.target)) updatePanelOpen.value = false
+}
 
 onMounted(() => {
   store.fetchAssets()
   if (!companiesStore.companies.length) companiesStore.fetchAll()
+  document.addEventListener('click', handleOutsideClick, true)
 })
+onBeforeUnmount(() => document.removeEventListener('click', handleOutsideClick, true))
 
 const departments = computed(() =>
   [...new Set(store.assets.map((a) => a.department).filter(Boolean))].sort()
@@ -283,6 +389,10 @@ const categories = computed(() =>
   [...new Set(store.assets.map((a) => a.category).filter(Boolean))].sort()
 )
 const statuses = computed(() => [...new Set(store.assets.map((a) => a.status).filter(Boolean))])
+
+const activeFilterCount = computed(() =>
+  [departmentFilter.value, categoryFilter.value, statusFilter.value, companyFilter.value].filter(Boolean).length
+)
 
 function companyCode(companyId) {
   return companiesStore.companies.find((c) => c.id === companyId)?.code || '—'
@@ -421,4 +531,31 @@ async function syncRds() {
     syncing.value = false
   }
 }
+
+async function linkHoldersHris() {
+  linkingHris.value = true
+  hrisLinkError.value = ''
+  hrisLinkResult.value = null
+  try {
+    const { data } = await api.post('/api/assets/link-holders-hris')
+    hrisLinkResult.value = data
+    await store.fetchAssets()
+  } catch (err) {
+    hrisLinkError.value = err.response?.data?.detail ?? 'common.genericError'
+  } finally {
+    linkingHris.value = false
+  }
+}
 </script>
+
+<style scoped>
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+</style>

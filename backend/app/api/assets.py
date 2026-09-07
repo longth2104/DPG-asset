@@ -30,6 +30,7 @@ from app.schemas.asset import (
     AssetImportResult,
     AssetListItem,
     AssetOut,
+    AssetHrisLinkResult,
     AssetSyncResult,
     AssetUpdate,
 )
@@ -408,6 +409,40 @@ async def sync_from_rds(
     return AssetSyncResult(
         created=created, updated=updated, unmapped_companies=sorted(unmapped_companies)
     )
+
+
+@router.post("/link-holders-hris", response_model=AssetHrisLinkResult)
+async def link_holders_to_hris(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    """Retroactively links free-text `holder` names to real accounts for
+    every asset that doesn't have one yet — the same best-effort,
+    unambiguous-name-only match Excel import already does at import time
+    (see find_user_by_name), just run once across existing data instead of
+    only for newly imported rows. Spans every company, so admin-only."""
+    try:
+        hris_directory = await search_employees()
+    except (RuntimeError, httpx.HTTPError) as e:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, f"HRIS unavailable: {e}")
+
+    result = await db.execute(
+        select(Asset).where(Asset.holder_user_id.is_(None), Asset.holder.is_not(None), Asset.holder != "")
+    )
+    assets = result.scalars().all()
+
+    linked = 0
+    unmatched = 0
+    for asset in assets:
+        holder = await find_user_by_name(db, asset.holder, hris_directory)
+        if holder:
+            asset.holder_user_id = holder.id
+            linked += 1
+        else:
+            unmatched += 1
+
+    await db.commit()
+    return AssetHrisLinkResult(linked=linked, unmatched=unmatched)
 
 
 @router.get("/{asset_id}", response_model=AssetOut)

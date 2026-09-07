@@ -55,6 +55,7 @@
     "cancel": "Hủy",
     "create": "Tạo mới",
     "search": "Tìm kiếm",
+    "delete": "Xóa",
     "genericError": "Đã xảy ra lỗi, vui lòng thử lại",
     "noResults": "Không có dữ liệu"
   },
@@ -116,7 +117,15 @@
       "syncRds": "Đồng bộ từ RDS",
       "syncing": "Đang đồng bộ...",
       "syncResult": "Đồng bộ RDS: {created} tạo mới, {updated} cập nhật",
-      "syncUnmapped": "mã công ty chưa xác định: {codes}"
+      "syncUnmapped": "mã công ty chưa xác định: {codes}",
+      "linkHris": "Liên kết người giữ với HRIS",
+      "linkingHris": "Đang liên kết...",
+      "linkHrisResult": "Liên kết HRIS: {linked} đã liên kết, {unmatched} vẫn để dạng chữ (không khớp rõ ràng)"
+    },
+    "toolbar": {
+      "filter": "Bộ lọc",
+      "edit": "Xuất / nhập / xóa",
+      "update": "Đồng bộ / cập nhật dữ liệu"
     }
   },
   "assetDetail": {
